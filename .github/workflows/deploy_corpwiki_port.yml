@@ -1,9 +1,10 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches:
-      - master
+  # Disabled for Monorepo Port
+  # push:
+  #   branches:
+  #     - master
 
 permissions:
   contents: read
