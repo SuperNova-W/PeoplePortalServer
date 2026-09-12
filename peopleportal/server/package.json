@@ -2,15 +2,6 @@
   "name": "people-portal-server",
   "version": "1.0.0",
   "main": "app.js",
-  "scripts": {
-    "test": "NODE_ENV=test npm run build && NODE_ENV=test node --require ./test/helpers/bootstrap.js --test \"test/**/*.test.js\"",
-    "build": "tsoa spec-and-routes && tsc && cpx src/**/*.hbs dist",
-    "start": "node dist/app.js",
-    "dev": "NODE_ENV=development npm run build && NODE_ENV=development nodemon src/app.ts",
-    "test:unit": "NODE_ENV=test node --require ./test/helpers/bootstrap.js --test \"test/unit/**/*.test.js\"",
-    "test:integration": "NODE_ENV=test node --require ./test/helpers/bootstrap.js --test \"test/integration/**/*.test.js\"",
-    "seed": "tsx scripts/seed.ts"
-  },
   "keywords": [],
   "author": "Atheesh Thirumalairajan",
   "license": "GPL-3.0-only",
