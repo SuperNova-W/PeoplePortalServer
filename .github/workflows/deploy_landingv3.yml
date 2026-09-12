@@ -1,0 +1,79 @@
+name: Deploy Landing v3 to Cloudflare Pages
+
+on:
+  push:
+    branches: ["master"]
+    paths:
+      - "landing-v3/**"
+  workflow_dispatch:
+
+concurrency:
+  group: "pages-landing-v3"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: landing-v3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect package manager
+        id: detect-package-manager
+        run: |
+          if [ -f "yarn.lock" ] || [ -f "${{ github.workspace }}/yarn.lock" ]; then
+            echo "manager=yarn" >> $GITHUB_OUTPUT
+            echo "command=install" >> $GITHUB_OUTPUT
+            echo "runner=yarn" >> $GITHUB_OUTPUT
+            exit 0
+          elif [ -f "package-lock.json" ] || [ -f "${{ github.workspace }}/package-lock.json" ]; then
+            echo "manager=npm" >> $GITHUB_OUTPUT
+            echo "command=ci" >> $GITHUB_OUTPUT
+            echo "runner=npx --no-install" >> $GITHUB_OUTPUT
+            exit 0
+          elif [ -f "package.json" ]; then
+            echo "manager=npm" >> $GITHUB_OUTPUT
+            echo "command=install" >> $GITHUB_OUTPUT
+            echo "runner=npx --no-install" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "Unable to determine package manager"
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: ${{ steps.detect-package-manager.outputs.manager }}
+          cache-dependency-path: |
+            landing-v3/package-lock.json
+            landing-v3/yarn.lock
+            package-lock.json
+            yarn.lock
+
+      - name: Restore Next.js cache
+        uses: actions/cache@v4
+        with:
+          path: landing-v3/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('landing-v3/**/package-lock.json', 'landing-v3/**/yarn.lock', 'package-lock.json', 'yarn.lock') }}-${{ hashFiles('landing-v3/**.[jt]s', 'landing-v3/**.[jt]sx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('landing-v3/**/package-lock.json', 'landing-v3/**/yarn.lock', 'package-lock.json', 'yarn.lock') }}-
+
+      - name: Install dependencies
+        run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+
+      - name: Build with Next.js
+        run: ${{ steps.detect-package-manager.outputs.runner }} next build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy out --project-name=appdevclub-landing --branch=master
+          workingDirectory: landing-v3
