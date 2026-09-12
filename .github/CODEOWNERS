@@ -1,0 +1,5 @@
+# Protect the CODEOWNERS file
+.github/CODEOWNERS @candiedoperation
+
+# Protect all GitHub Actions workflow files
+.github/workflows/ @candiedoperation
