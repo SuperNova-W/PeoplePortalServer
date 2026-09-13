@@ -1021,12 +1021,12 @@ export class ATSController extends Controller {
                         interviewGuidelines: interviewGuidelines
                     }
                 })
-            /* Potential Hire deliberately notifies nobody. It is an internal
-               grouping the recruiting team uses while deciding, and the old
-               "Waitlisted for ..." mail told applicants they had been passed
-               over before that was true. Requested by the bootcamp leads,
-               2026-09-02. The RecruitPotentialHireInfo template is kept for
-               a future opt-in send. */
+                /* Potential Hire deliberately notifies nobody. It is an internal
+                   grouping the recruiting team uses while deciding, and the old
+                   "Waitlisted for ..." mail told applicants they had been passed
+                   over before that was true. Requested by the bootcamp leads,
+                   2026-09-02. The RecruitPotentialHireInfo template is kept for
+                   a future opt-in send. */
             } else if (stage === ApplicationStage.HIRED) {
                 await this.processHiredStageTransition(
                     req.session.authorizedUser!, teamInfo,

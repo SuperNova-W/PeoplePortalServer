@@ -339,29 +339,28 @@ export class OrgController extends Controller {
     async getCommonTeams(
         @Request() req: express.Request,
         @Path() personId: number
-    ): Promise<APIGetCommonTeamsResponse>
-    {
+    ): Promise<APIGetCommonTeamsResponse> {
         // Get user info
         const userInfo = await this.authentikClient.getUserInfo(personId)
-            .catch((e) => { 
-                throw new ResourceAccessError(400, `Failed to fetch user info: ${e}`) 
+            .catch((e) => {
+                throw new ResourceAccessError(400, `Failed to fetch user info: ${e}`)
             });
-        
+
         // Get common teams
         const authorizedUser = req.session.authorizedUser!;
 
         const [userTeams, requesterTeams] = await Promise.all([
             this.authentikClient.getRootTeamsForUsername(userInfo.username)
-                .catch((e) => { 
-                    throw new ResourceAccessError(400, `Failed to fetch user teams: ${e}`) 
+                .catch((e) => {
+                    throw new ResourceAccessError(400, `Failed to fetch user teams: ${e}`)
                 }),
             this.authentikClient.getRootTeamsForUsername(authorizedUser.username)
-                .catch((e) => { 
-                    throw new ResourceAccessError(400, `Failed to fetch user teams: ${e}`) 
+                .catch((e) => {
+                    throw new ResourceAccessError(400, `Failed to fetch user teams: ${e}`)
                 })
         ]);
-        
-        const commonTeams = userTeams.teams.filter((t) => 
+
+        const commonTeams = userTeams.teams.filter((t) =>
             requesterTeams.teams.find((team) => team.pk === t.pk) !== undefined
         );
 
@@ -393,8 +392,8 @@ export class OrgController extends Controller {
         }
         // 1. Ensure user exists
         const userInfo = await this.authentikClient.getUserInfo(personId)
-            .catch((e) => { 
-                throw new ResourceAccessError(400, `Failed to fetch user info: ${e}`) 
+            .catch((e) => {
+                throw new ResourceAccessError(400, `Failed to fetch user info: ${e}`)
             });
 
         // 2. Ensure user is in the target team
@@ -412,7 +411,7 @@ export class OrgController extends Controller {
         }
 
         // 3. Find document and return it.
-        try { 
+        try {
             const review = await UserReview.findOne({
                 userId: personId,
                 creatorId: req.session.authorizedUser!.pk,
@@ -444,7 +443,7 @@ export class OrgController extends Controller {
         @Path() personId: number,
         @Queries() options: APIGetReviewsOptions
     ): Promise<APIGetReviewsResponse> {
-        
+
         // Max 100 reviews returned.
         const limit = Math.min(100, options.limit ?? 10);
 
@@ -476,15 +475,19 @@ export class OrgController extends Controller {
             try {
                 const result = await UserReview.aggregate([
                     { $match: filters },
-                    { $facet: {
-                        stats: [
-                            { $group: {
-                                _id: null,
-                                average: { $avg: "$rating" },
-                                count: { $sum: 1 } 
-                            }}
-                        ]
-                    }}
+                    {
+                        $facet: {
+                            stats: [
+                                {
+                                    $group: {
+                                        _id: null,
+                                        average: { $avg: "$rating" },
+                                        count: { $sum: 1 }
+                                    }
+                                }
+                            ]
+                        }
+                    }
                 ]).exec();
                 const { average, count } = result[0]?.stats[0] ?? { average: 0, count: 0 };
 
@@ -513,11 +516,17 @@ export class OrgController extends Controller {
                 query.lean().exec(),
                 UserReview.aggregate([
                     { $match: filters },
-                    { $facet: { stats: [{ $group: {
-                        _id: null,
-                        average: { $avg: "$rating" },
-                        count: { $sum: 1 } 
-                    }}]}}
+                    {
+                        $facet: {
+                            stats: [{
+                                $group: {
+                                    _id: null,
+                                    average: { $avg: "$rating" },
+                                    count: { $sum: 1 }
+                                }
+                            }]
+                        }
+                    }
                 ]).exec()
             ]);
 
@@ -591,7 +600,7 @@ export class OrgController extends Controller {
             }
             throw new ResourceAccessError(500, "Failed to fetch review.");
         }
-        
+
         // 4. Create review.
         let review: HydratedDocument<IUserReview>;
         try {
@@ -609,7 +618,7 @@ export class OrgController extends Controller {
         }
 
         return { review: review.toJSON() };
-    }   
+    }
 
     /**
      * Edit an existing review for a person. The requestor must
@@ -640,7 +649,7 @@ export class OrgController extends Controller {
 
         // 1. Get Review
         const review = await UserReview.findById(reviewId).exec()
-            .catch((e) => { throw new ResourceAccessError(500, `Failed to fetch review: ${e}`)});
+            .catch((e) => { throw new ResourceAccessError(500, `Failed to fetch review: ${e}`) });
 
         if (review === null) {
             throw new CustomValidationError(404, "Review does not exist");
@@ -655,7 +664,7 @@ export class OrgController extends Controller {
         if (review.userId !== personId) {
             throw new CustomValidationError(400, "User ID does not match");
         }
-        
+
         // Ensure teamId matches review
         if (review.teamId !== body.teamId) {
             throw new CustomValidationError(400, "Team ID does not match.");
@@ -692,7 +701,7 @@ export class OrgController extends Controller {
     ) {
         // 1. Get Review
         const review = await UserReview.findById(reviewId).exec()
-            .catch((e) => { throw new ResourceAccessError(500, `Failed to fetch review: ${e}`)});
+            .catch((e) => { throw new ResourceAccessError(500, `Failed to fetch review: ${e}`) });
 
         if (review === null) {
             throw new CustomValidationError(404, "Review does not exist");
@@ -724,7 +733,7 @@ export class OrgController extends Controller {
                 throw new CustomValidationError(404, "Review does not exist");
             }
         }
-        
+
         // 3. Delete Review
         try {
             await review.deleteOne().exec();
@@ -1008,7 +1017,7 @@ export class OrgController extends Controller {
     @Security("oidc")
     async getOrgChart(@Queries() options?: APIGetOrgChartOptions): Promise<APIGetOrgChartResponse> {
         const shouldExpandAll = options?.expandAll ?? true;
-        
+
         // 1. Fetch Root Team (Exec Board)
         let execTeam: any;
         try {
@@ -1066,7 +1075,7 @@ export class OrgController extends Controller {
                 children: []
             });
         }));
-        
+
         // 5. Initialize Divisions
         /* Keyed by TeamType rather than string: Object.keys then yields real
            enum members, so the teamType comparison below is type-checked and a
@@ -1083,14 +1092,13 @@ export class OrgController extends Controller {
         } catch (e) {
             return { root: { id: "error", name: "Could not fetch groups list.", type: "ROOT_MEMBER" } };
         }
-        
+
         const allTeams = allTeamsRes.teams;
 
         // 6. Pre-populate Divisions with Team Owners (Level 3)
         // We do this REGARDLESS of expandAll to ensure they are visible.
         // We check for "Roots" of each type.
-        for (const type of Object.keys(divisions) as TeamType[]) 
-        {
+        for (const type of Object.keys(divisions) as TeamType[]) {
             const divRoots = allTeams.filter(t =>
                 !t.flaggedForDeletion &&
                 t.teamType === type &&
@@ -1161,7 +1169,7 @@ export class OrgController extends Controller {
             if (divisions[type]) {
                 divisions[type].children = nodes.filter((node) => node !== undefined);
             }
-            
+
 
         }
 
@@ -1335,7 +1343,8 @@ export class OrgController extends Controller {
     @Security("bindles", ["corp:membermgmt"])
     async createInvite(
         @Request() req: express.Request | ExpressRequestAuthUserShim & ExpressRequestBindleShim,
-        @Body() inviteReq: APITeamInviteCreateRequest
+        @Body() inviteReq: APITeamInviteCreateRequest,
+        @Path("teamId") _teamId?: string,
     ) {
         /* Validate & Normalize Name */
         const cleanedName = validatePersonName(inviteReq.inviteeName);

@@ -1770,6 +1770,7 @@ export function RegisterRoutes(app: Router) {
         const argsOrgController_createInvite: Record<string, TsoaRoute.ParameterSchema> = {
                 req: {"in":"request","name":"req","required":true,"dataType":"object"},
                 inviteReq: {"in":"body","name":"inviteReq","required":true,"ref":"APITeamInviteCreateRequest"},
+                _teamId: {"in":"path","name":"teamId","required":true,"dataType":"string"},
         };
         app.post('/api/org/teams/:teamId/externalinvite',
             authenticateMiddleware([{"bindles":["corp:membermgmt"]}]),

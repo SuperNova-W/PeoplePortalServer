@@ -8,7 +8,7 @@
     "outputDirectory": "dist",
     "specVersion": 3,
     "securityDefinitions": {
-      "OIDC Bindle Shim": {
+      "OIDC-Bindle-Shim": {
         "type": "oauth2",
         "flow": "implicit",
         "authorizationUrl": "/api/auth/login",
