@@ -716,7 +716,7 @@ export class ATSController extends Controller {
      * 
      * @param teamId People Portal Team ID
      * @param applicationId Application ID
-     * @param stars New star rating (0-5)
+     * @param stars New star rating (1-5)
      * @param notes Interview Feedback in Markdown Format
      */
 
@@ -738,9 +738,9 @@ export class ATSController extends Controller {
                 return { error: "BadRequest", message: "Stars or notes must be provided" };
             }
 
-            if (stars && (typeof stars !== 'number' || stars < 0 || stars > 5)) {
+            if (stars !== undefined && (typeof stars !== 'number' || stars < 1 || stars > 5)) {
                 this.setStatus(400);
-                return { error: "BadRequest", message: "Stars must be a number between 0 and 5" };
+                return { error: "BadRequest", message: "Stars must be a number between 1 and 5" };
             }
 
             // 1. Fetch Existing Application
