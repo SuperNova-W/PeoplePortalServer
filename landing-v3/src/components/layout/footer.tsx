@@ -93,9 +93,8 @@ const Footer = () => {
               value={emailMessage}
               onChange={handleEmailChange}
               className={`w-full rounded-lg border border-black p-3 bg-transparent text-black placeholder-black/70 pr-10
-                      focus:outline-none focus-visible:ring-2 focus-visible:ring-black/30 ${
-                        emailMessage ? "font-bold" : ""
-                      }`}
+                      focus:outline-none focus-visible:ring-2 focus-visible:ring-black/30 ${emailMessage ? "font-bold" : ""
+                }`}
             />
             <a
               href={mailto}
@@ -117,7 +116,8 @@ const Footer = () => {
 
       {/* bottom text */}
       <div className="w-full absolute inset-x-0 bottom-5 text-center text-black">
-        © {year} App Dev Club LLC
+        © {year} App Dev Club<br />
+        App Dev Club is a registered 501(c)(3) nonprofit organization
       </div>
     </footer>
   );

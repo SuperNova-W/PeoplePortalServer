@@ -59,7 +59,7 @@ export class EmailClient {
 
         try {
             return await this.transporter.sendMail({
-                from: request.from ?? process.env.PEOPLEPORTAL_SMTP_USER,
+                from: request.from ?? process.env.PEOPLEPORTAL_SMTP_DEFAULTFROM,
                 to: request.to,
                 cc: request.cc,
                 bcc: request.bcc,
@@ -106,7 +106,7 @@ export class EmailClient {
         }
 
         console.log(`Intercepted Email Send:`);
-        console.log(`From: ${request.from ?? process.env.PEOPLEPORTAL_SMTP_USER}`);
+        console.log(`From: ${request.from ?? process.env.PEOPLEPORTAL_SMTP_DEFAULTFROM}`);
         console.log(`To: ${request.to}`);
         console.log(`cc: ${request.cc ?? 'None'}`);
         console.log(`bcc: ${request.bcc ?? `None`}`);

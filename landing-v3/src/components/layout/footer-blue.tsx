@@ -16,7 +16,7 @@ const FooterBlue = () => {
       <div className="absolute bottom-15 left-1/2 transform -translate-x-1/2 w-[90%] h-[1px] bg-[#0083FF]"></div>
       {/* bottom text */}
       <div className="w-full absolute bottom-5 left-1/2 transform -translate-x-1/2 text-white text-md text-center">
-        © 2025 App Dev Club LLC
+        App Dev Club is a registered 501(c)(3) nonprofit organization
       </div>
       {/* back to top button */}
       <button
@@ -74,9 +74,8 @@ const FooterBlue = () => {
               placeholder="Send us an Email!"
               value={emailMessage}
               onChange={handleEmailChange}
-              className={`text-white border-1 border-white rounded-lg p-3 w-full bg-transparent placeholder-white pr-10 ${
-                emailMessage.length > 0 ? "font-bold" : ""
-              }`}
+              className={`text-white border-1 border-white rounded-lg p-3 w-full bg-transparent placeholder-white pr-10 ${emailMessage.length > 0 ? "font-bold" : ""
+                }`}
             />
             <a
               href={`mailto:umdappdev@gmail.com?subject=Information Request&body=${emailMessage}`}
@@ -90,7 +89,7 @@ const FooterBlue = () => {
           </div>
         </div>
       </div>
-      
+
     </div>
   );
 };
