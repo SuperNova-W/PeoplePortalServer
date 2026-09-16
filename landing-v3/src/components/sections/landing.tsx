@@ -68,7 +68,7 @@ const Landing = () => {
               />
               <p className="text-5xl xl:text-6xl font-bold">+</p>
             </span>
-            <p className="text-2xl">Dollars Saved</p>
+            <p className="text-2xl">Dollars Saved for Partners</p>
           </span>
 
           <div className="hidden md:flex lg:contents flex-row justify-around w-full max-w-4xl">

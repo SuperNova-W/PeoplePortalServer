@@ -43,21 +43,21 @@ const Footer = () => {
         {/* social media icons */}
         <div className="flex gap-5 items-center">
           <Link
-            href="https://www.instagram.com/appdev_umd/"
+            href="https://www.instagram.com/app_dev_club/"
             target="_blank"
             rel="noopener noreferrer"
           >
             <Image width={28} height={28} src={prefixPath("/icons/ig-icon.png")} alt="Instagram" className="w-7 h-auto" />
           </Link>
           <Link
-            href="https://www.linkedin.com/company/app-development-club/"
+            href="https://www.linkedin.com/company/app-dev-club/"
             target="_blank"
             rel="noopener noreferrer"
           >
             <Image width={28} height={28} src={prefixPath("/icons/linkedin-icon.png")} alt="LinkedIn" className="w-7 h-auto" />
           </Link>
           <Link
-            href="https://github.com/appdevumd"
+            href="https://github.com/appdev-club"
             target="_blank"
             rel="noopener noreferrer"
           >

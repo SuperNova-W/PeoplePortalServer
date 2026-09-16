@@ -12,11 +12,10 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: "App Dev Club @ UMD",
+  title: "App Dev Club",
   description:
-    "Fostering the growth of UMD Computer Science students through creating digital solutions for Fortune 500 Companies - EST. Sep 2023",
+    "501(c)(3) Non Profit helping foster the growth of Computer Science students through creating digital solutions for Fortune 500 Companies - EST. Sep 2023",
   keywords: [
-    "UMD",
     "University of Maryland",
     "App Dev Club",
     "Computer Science",
@@ -27,13 +26,15 @@ export const metadata: Metadata = {
     "Tech Club",
     "Fortune 500",
     "Digital Solutions",
+    "Non Profit",
+    "501(c)(3)"
   ],
   authors: [{ name: "App Dev Club" }],
   metadataBase: new URL("https://appdevclub.com"),
   openGraph: {
-    title: "App Dev Club @ UMD",
+    title: "App Dev Club",
     description:
-      "Fostering the growth of UMD Computer Science students through creating digital solutions for Fortune 500 Companies - EST. Sep 2023",
+      "Fostering the growth of Computer Science students through creating digital solutions for Fortune 500 Companies - EST. Sep 2023",
     url: "https://appdevclub.com",
     siteName: "App Dev Club",
     images: [
@@ -41,7 +42,7 @@ export const metadata: Metadata = {
         url: "/og-image.webp",
         width: 1422,
         height: 800,
-        alt: "App Dev Club @ UMD",
+        alt: "App Dev Club",
       },
     ],
     locale: "en_US",
@@ -49,9 +50,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "App Dev Club @ UMD",
+    title: "App Dev Club",
     description:
-      "Fostering the growth of UMD Computer Science students through creating digital solutions for Fortune 500 Companies - EST. Sep 2023",
+      "501(c)(3) Non Profit helping foster the growth of Computer Science students through creating digital solutions for Fortune 500 Companies - EST. Sep 2023",
     images: ["/og-image.webp"],
   },
   alternates: {

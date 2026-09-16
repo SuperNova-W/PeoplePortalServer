@@ -25,13 +25,11 @@ const WhatIsAdc = () => {
           What is App Dev Club?
         </h2>
       </div>
-      
+
       <div className='max-w-6xl mx-auto px-4 text-base md:text-lg text-center flex flex-col gap-12'>
         <FadeSlideIn>
           <p className='text-justify md:text-center text-base md:text-xl text-gray-600 px-4'>
-            App Dev Club <span className='font-extrabold'>bridges the gap</span> between talented students who lack industry experience
-            and companies who need to hire talented software engineering candidates. Companies 
-            want to identify the best talent, but traditional hiring methods sometimes fall short. The best way to find strong candidates is to give them a real problem to solve. Companies come to App Dev Club with projects that they want done, but might not have the bandwidth or resources to take on. We then form a team of undergraduate students who develop it over the course of the semester.
+            App Dev Club is a registered 501(c)(3) nonprofit organization dedicated to bridging the gap between academic theory and real-world engineering. We partner with industry mentors and organizations to provide undergraduate students with hands-on software development experience, experiential learning tracks, and technical mentorship over the course of the semester.
           </p>
         </FadeSlideIn>
 

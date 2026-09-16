@@ -32,21 +32,21 @@ const FooterBlue = () => {
 
         <div className="flex gap-5 items-center">
           <a
-            href="https://www.instagram.com/appdev_umd/"
+            href="https://www.instagram.com/app_dev_club/"
             target="_blank"
             rel="noopener noreferrer"
           >
             <img src="igicon.svg" alt="Instagram" className="w-7" />
           </a>
           <a
-            href="https://www.linkedin.com/company/app-development-club/"
+            href="https://www.linkedin.com/company/app-dev-club/"
             target="_blank"
             rel="noopener noreferrer"
           >
             <img src="linkedinicon.svg" alt="LinkedIn" className="w-7" />
           </a>
           <a
-            href="https://github.com/appdevumd"
+            href="https://github.com/appdev-club"
             target="_blank"
             rel="noopener noreferrer"
           >

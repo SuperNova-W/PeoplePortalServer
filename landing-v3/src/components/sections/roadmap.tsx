@@ -105,7 +105,7 @@ const roadmapPositions: RoadmapPosition[] = [
 
 const PositionPopover = ({ position }: { position: RoadmapPosition }) => {
   const layoutId = `position-${position.id}`
-  
+
   return (
     <MorphingPopover>
       <MorphingPopoverTrigger asChild>
@@ -116,14 +116,14 @@ const PositionPopover = ({ position }: { position: RoadmapPosition }) => {
                 {position.icon}
               </div>
               <div className="flex flex-col">
-                <motion.h3 
+                <motion.h3
                   layoutId={`${layoutId}-title`}
                   layout='position'
                   className="text-xl font-bold text-gray-800 mb-1"
                 >
                   {position.title}
                 </motion.h3>
-                <motion.span 
+                <motion.span
                   layoutId={`${layoutId}-duration`}
                   layout='position'
                   className="text-sm text-gray-600"
@@ -199,7 +199,7 @@ const Roadmap = () => {
             Your ADC Journey
           </h2>
           <p className="text-base md:text-xl text-gray-600 px-4 max-w-5xl mx-auto">
-            Follow the path through the App Development Club. From bootcamp member to leadership, 
+            Follow the path through the App Dev Club. From bootcamp member to leadership,
             every step builds your skills and opens new opportunities.
           </p>
           <p className='text-neutral-500 mt-3 px-4'>Not everyone starts in the bootcamp, many people join directly as Project Engineers too!</p>
@@ -209,16 +209,16 @@ const Roadmap = () => {
         <div className="hidden md:block relative w-3xl lg:w-5xl xl:w-6xl">
           {/* First Row: Bootcamp -> Shadow */}
           <div className="flex items-center gap-0 mb-6 lg:mr-32">
-              <FadeSlideIn direction='right' delay={0} className="flex-1 max-w-32 hidden lg:flex items-center justify-center px-8">
-                <div className="w-full h-[3px] bg-neutral-400 relative rounded-md">
-                  <ArrowRight className="w-8 h-8 text-neutral-400 absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2" />
-                </div>
-              </FadeSlideIn>
+            <FadeSlideIn direction='right' delay={0} className="flex-1 max-w-32 hidden lg:flex items-center justify-center px-8">
+              <div className="w-full h-[3px] bg-neutral-400 relative rounded-md">
+                <ArrowRight className="w-8 h-8 text-neutral-400 absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2" />
+              </div>
+            </FadeSlideIn>
 
             <FadeSlideIn direction='right' delay={25} className="w-80">
               <PositionPopover position={roadmapPositions[0]} />
             </FadeSlideIn>
-            
+
             {/* Full-width arrow */}
             <FadeSlideIn direction='right' delay={50} className="flex-1 flex items-center justify-center px-16">
               <div className="w-full h-[3px] bg-neutral-400 relative rounded-md">
@@ -245,7 +245,7 @@ const Roadmap = () => {
             <FadeSlideIn direction='left' delay={125} className="w-80">
               <PositionPopover position={roadmapPositions[3]} />
             </FadeSlideIn>
-            
+
             {/* Full-width arrow */}
             <FadeSlideIn direction='left' delay={150} className="flex-1 flex items-center justify-center px-16">
               <div className="w-full h-[3px] bg-neutral-400 relative rounded-md">
@@ -293,7 +293,7 @@ const Roadmap = () => {
               <FadeSlideIn direction='down' delay={index * 15} className="w-full max-w-md h-36 pt-0.5">
                 <PositionPopover position={position} />
               </FadeSlideIn>
-              
+
               {/* Vertical arrow (except for last item) */}
               {index < roadmapPositions.length - 1 && (
                 <FadeSlideIn direction='down' delay={index * 25} className="my-2">

@@ -16,7 +16,7 @@ const Instagram = () => {
       {/* instagram profile gradient button link */}
       <FadeSlideIn delay={50} className="flex items-center justify-center mb-10">
         <Link
-          href="https://www.instagram.com/appdev_umd/"
+          href="https://www.instagram.com/app_dev_club/"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Visit our Instagram profile"
@@ -28,7 +28,7 @@ const Instagram = () => {
                transition-all duration-300
                group-hover:bg-transparent group-hover:text-[#DD2A7B] font-semibold"
           >
-            @appdev_umd
+            @app_dev_club
           </span>
         </Link>
       </FadeSlideIn>

@@ -131,7 +131,7 @@ const PERSONAL_INFO_FIELDS: PersonalInfoField[] = [
     { id: "resumeUrl", label: "Resume (Upload PDF Only)", type: "file", required: true },
     {
         id: "instagramFollow",
-        label: "Do you follow App Dev (@appdev_umd) on Instagram?",
+        label: "Do you follow App Dev (@app_dev_club) on Instagram?",
         type: "select",
         options: [
             "Yes 🥳",
