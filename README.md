@@ -1,10 +1,10 @@
-# App Dev Club Tech Ops
+<img width="64" height="64" alt="App Dev Club Logo" src="https://github.com/user-attachments/assets/4dca5aa5-448f-4efd-b9a0-5c2484c5c191" />
+
+# Tech Ops
 
 Welcome to the main source of all internal technology for the [App Dev Club](https://appdevclub.com). The Tech Ops infrastructure housed in this repository is central to all our operations, powering everything from recruitment, finances, event management, and team provisioning to our public-facing web presence.
 
 This project is structured as a modern **Nx Monorepo**, allowing us to seamlessly manage multiple applications, libraries, and deployments from a single, unified codebase.
-
----
 
 ## Monorepo Components
 
