@@ -1,5 +1,5 @@
 {
-  "name": "horizon",
+  "name": "horizon-dag",
   "projectType": "application",
   "sourceRoot": "horizon",
   "tags": [
@@ -36,7 +36,7 @@
         "install-deps"
       ],
       "options": {
-        "command": "PHI_ENV_FILE='' .venv/bin/python -m pytest -q",
+        "command": "HORIZON_ENV_FILE='' .venv/bin/python -m pytest -q",
         "cwd": "{projectRoot}"
       }
     },
@@ -52,7 +52,7 @@
         "cwd": "{projectRoot}"
       }
     },
-    "dagster": {
+    "serve": {
       "executor": "nx:run-commands",
       "dependsOn": [
         "install-deps"

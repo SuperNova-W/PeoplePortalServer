@@ -18,5 +18,5 @@ identity-aliases.json
 # Claude Code local state: scheduled-task locks and worktree copies of this repo.
 .claude/
 
-# Dagster instance state (run history, logs) for `nx run horizon:dagster`.
+# Dagster instance state (run history, logs) for `nx run horizon-dag:serve`.
 .dagster/

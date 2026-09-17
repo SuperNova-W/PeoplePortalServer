@@ -3,7 +3,7 @@
 Scoped to exactly the three values a blame run reads, rather than a shared
 settings object that accumulates every service's configuration.
 
-The dotenv path is resolved once at import from ``PHI_ENV_FILE``, so
+The dotenv path is resolved once at import from ``HORIZON_ENV_FILE``, so
 ``tests/conftest.py`` clearing it keeps a developer's real Gitea URL and tokens
 out of every test run.
 """
@@ -16,7 +16,7 @@ from functools import lru_cache
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_ENV_FILE = os.environ.get("PHI_ENV_FILE", ".env") or None
+_ENV_FILE = os.environ.get("HORIZON_ENV_FILE", ".env") or None
 
 
 class PipelineConfigError(RuntimeError):
@@ -44,19 +44,18 @@ class PipelineSettings(BaseSettings):
         env_file_encoding="utf-8",
     )
 
+    # Two names each, not three: the HORIZON_ name is canonical, and the PHI_ name
+    # is what existing horizon/.env files already set. A bare GITEA_URL was dropped
+    # in review -- a name that generic invites a collision with any other tool.
     gitea_url: str | None = Field(
         default=None,
-        validation_alias=AliasChoices("HORIZON_GITEA_URL", "PHI_GITEA_URL", "GITEA_URL"),
+        validation_alias=AliasChoices("HORIZON_GITEA_URL", "PHI_GITEA_URL"),
         description="Base URL of the Gitea instance, e.g. https://git.example.com.",
     )
     gitea_api_token: str | None = Field(
         default=None,
         repr=False,
-        validation_alias=AliasChoices(
-            "HORIZON_GITEA_API_TOKEN",
-            "PHI_GITEA_API_TOKEN",
-            "GITEA_API_TOKEN",
-        ),
+        validation_alias=AliasChoices("HORIZON_GITEA_API_TOKEN", "PHI_GITEA_API_TOKEN"),
         description="Read-only Gitea API token.",
     )
     database_url: str | None = Field(
