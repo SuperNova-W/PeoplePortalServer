@@ -13,7 +13,19 @@ partition key instead; nothing else about it changes.
 # into strings it then refuses.
 from dagster import AssetExecutionContext, Config, MetadataValue, asset
 
+from ..metadata import table_schema_from
 from ..resources import GiteaClient, Repository
+
+REPOSITORY_SCHEMA = table_schema_from(
+    Repository,
+    {
+        "org": ("string", "Gitea organization, as Gitea spells it."),
+        "name": ("string", "Repository name, as Gitea spells it."),
+        "ssh_url": ("string", "Clone URL blame runs against; git-over-HTTP is disabled here."),
+        "default_branch": ("string", "Branch blamed -- the only branch blame can see."),
+        "empty": ("bool", "Gitea reports no commits, so there is nothing to blame."),
+    },
+)
 
 
 class RepositoryConfig(Config):
@@ -29,8 +41,17 @@ class RepositoryConfig(Config):
 
 @asset(
     group_name="l1_source",
-    compute_kind="gitea",
-    description="Clone URL and default branch for one repository -- one Gitea API call.",
+    kinds={"gitea"},
+    description=(
+        "Clone URL and default branch for one repository. Exactly one Gitea API "
+        "call -- no commit list, no branch list, which is what makes blame O(1) "
+        "calls per repository."
+    ),
+    metadata={
+        "dagster/column_schema": REPOSITORY_SCHEMA,
+        "endpoint": "GET /api/v1/repos/{org}/{repo}",
+        "api_calls": 1,
+    },
 )
 def gitea_repository(
     context: AssetExecutionContext,

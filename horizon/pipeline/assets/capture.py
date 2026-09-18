@@ -18,6 +18,7 @@ from pathlib import Path
 # into strings it then refuses.
 from dagster import AssetExecutionContext, Failure, MetadataValue, asset
 
+from ..metadata import table_schema_from
 from ..resources import BLAME_FLAGS, GitWorkspace, Repository
 
 # The section header written above each file's blame output. It carries the
@@ -64,10 +65,36 @@ class BlameCapture:
         return f"{self.org}/{self.repo}"
 
 
+CAPTURE_SCHEMA = table_schema_from(
+    BlameCapture,
+    {
+        "org": ("string", "Gitea organization the capture is of."),
+        "repo": ("string", "Repository the capture is of."),
+        "default_branch": ("string", "Branch that was cloned and blamed."),
+        "path": ("path", "File on disk holding the raw blame text."),
+        "files_tracked": ("int", "Files git tracks in the clone, before any skipping."),
+        "files_captured": ("int", "Files that produced blame output and reached the capture."),
+        "files_skipped_binary": ("int", "Files skipped as binary -- no lines to attribute."),
+        "files_failed": ("int", "Files git could not blame. Counted, never silently dropped."),
+        "bytes_written": ("int", "Size of the capture file."),
+        "failed_paths": ("list[string]", "First few files that failed, for diagnosis."),
+    },
+)
+
+
 @asset(
     group_name="l2_capture",
-    compute_kind="git",
-    description="Raw `git blame --line-porcelain -w -M -C` text for every tracked file.",
+    kinds={"git"},
+    description=(
+        "Raw `git blame --line-porcelain -w -M -C` text for every tracked file, "
+        "written to disk so later layers re-run without re-cloning. Nothing is "
+        "interpreted here -- no extension filter, all 14 fields kept."
+    ),
+    metadata={
+        "dagster/column_schema": CAPTURE_SCHEMA,
+        "blame_command": "git blame --line-porcelain -w -M -C",
+        "grain": "one capture file per repository per run",
+    },
 )
 def blame_capture(
     context: AssetExecutionContext,

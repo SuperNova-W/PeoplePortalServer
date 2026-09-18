@@ -5,28 +5,32 @@ from pipeline.definitions import defs
 from pipeline.resources import GiteaClient, GitWorkspace, PostgresResource, build_resources
 
 
-def test_definitions_expose_the_two_blame_assets():
+ASSET_KEYS = {
+    AssetKey("gitea_repository"),
+    AssetKey("blame_capture"),
+    AssetKey("blame_records"),
+}
+
+
+def test_definitions_expose_the_blame_assets():
     assert isinstance(defs, Definitions)
-    assert set(defs.resolve_all_asset_keys()) == {
-        AssetKey("gitea_repository"),
-        AssetKey("blame_capture"),
-    }
+    assert set(defs.resolve_all_asset_keys()) == ASSET_KEYS
 
 
 def test_definitions_resolve_into_a_repository():
     """This is what `dagster dev` does on boot, so it catches bad wiring here."""
-    assert set(defs.get_repository_def().assets_defs_by_key) == {
-        AssetKey("gitea_repository"),
-        AssetKey("blame_capture"),
-    }
+    assert set(defs.get_repository_def().assets_defs_by_key) == ASSET_KEYS
 
 
-def test_capture_depends_on_the_source_asset():
-    """The graph, not the import order, is what makes the clone follow the lookup."""
+def test_the_layers_depend_on_each_other_in_order():
+    """The graph, not the import order, is what makes each layer follow the last."""
     assets_by_key = defs.get_repository_def().assets_defs_by_key
+
     capture = assets_by_key[AssetKey("blame_capture")]
+    records = assets_by_key[AssetKey("blame_records")]
 
     assert AssetKey("gitea_repository") in capture.asset_deps[AssetKey("blame_capture")]
+    assert AssetKey("blame_capture") in records.asset_deps[AssetKey("blame_records")]
 
 
 def test_each_layer_is_its_own_group():
@@ -37,14 +41,20 @@ def test_each_layer_is_its_own_group():
         key.to_user_string(): definition.group_names_by_key[key]
         for key, definition in assets_by_key.items()
     }
-    assert groups == {"gitea_repository": "l1_source", "blame_capture": "l2_capture"}
+    assert groups == {
+        "gitea_repository": "l1_source",
+        "blame_capture": "l2_capture",
+        "blame_records": "l3_parse",
+    }
 
 
-def test_the_capture_check_is_registered():
+def test_every_check_is_registered_against_its_asset():
     checks = defs.get_repository_def().asset_checks_defs_by_key
 
     assert {(key.asset_key, key.name) for key in checks} == {
-        (AssetKey("blame_capture"), "capture_is_non_empty")
+        (AssetKey("blame_capture"), "capture_is_non_empty"),
+        (AssetKey("blame_records"), "records_carry_every_field"),
+        (AssetKey("blame_records"), "records_parse_completely"),
     }
 
 
