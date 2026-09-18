@@ -1,18 +1,51 @@
-from dagster import Definitions
+from dagster import AssetKey, Definitions
 
 from pipeline.config import PipelineSettings
 from pipeline.definitions import defs
 from pipeline.resources import GiteaClient, GitWorkspace, PostgresResource, build_resources
 
 
-def test_definitions_load_with_zero_assets():
+def test_definitions_expose_the_two_blame_assets():
     assert isinstance(defs, Definitions)
-    assert list(defs.resolve_all_asset_keys()) == []
+    assert set(defs.resolve_all_asset_keys()) == {
+        AssetKey("gitea_repository"),
+        AssetKey("blame_capture"),
+    }
 
 
 def test_definitions_resolve_into_a_repository():
     """This is what `dagster dev` does on boot, so it catches bad wiring here."""
-    assert defs.get_repository_def().assets_defs_by_key == {}
+    assert set(defs.get_repository_def().assets_defs_by_key) == {
+        AssetKey("gitea_repository"),
+        AssetKey("blame_capture"),
+    }
+
+
+def test_capture_depends_on_the_source_asset():
+    """The graph, not the import order, is what makes the clone follow the lookup."""
+    assets_by_key = defs.get_repository_def().assets_defs_by_key
+    capture = assets_by_key[AssetKey("blame_capture")]
+
+    assert AssetKey("gitea_repository") in capture.asset_deps[AssetKey("blame_capture")]
+
+
+def test_each_layer_is_its_own_group():
+    """One box per layer in the UI, so a failure localises to a layer."""
+    assets_by_key = defs.get_repository_def().assets_defs_by_key
+
+    groups = {
+        key.to_user_string(): definition.group_names_by_key[key]
+        for key, definition in assets_by_key.items()
+    }
+    assert groups == {"gitea_repository": "l1_source", "blame_capture": "l2_capture"}
+
+
+def test_the_capture_check_is_registered():
+    checks = defs.get_repository_def().asset_checks_defs_by_key
+
+    assert {(key.asset_key, key.name) for key in checks} == {
+        (AssetKey("blame_capture"), "capture_is_non_empty")
+    }
 
 
 def test_definitions_expose_the_three_shared_resources():
