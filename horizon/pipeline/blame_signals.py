@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 from math import log
+from pathlib import PurePosixPath
 
 from .blame_parser import BlameRecord
 
@@ -70,6 +71,19 @@ class MemberHistoryBoundary:
     surviving_lines: int
     history_boundary_lines: int
     history_boundary_share: float
+
+
+@dataclass(frozen=True)
+class MemberDirectoryComponentBreadth:
+    """Directory and top-level component breadth for one member."""
+
+    organization: str
+    repository: str
+    author_name: str
+    author_email: str
+    files_contributed: int
+    directory_breadth: int
+    component_breadth: int
 
 
 def calculate_member_multi_owner_file_share(
@@ -281,4 +295,47 @@ def calculate_member_history_boundary_share(
             author_name,
             author_email,
         ), (surviving_lines, history_boundary_lines) in sorted(counts.items())
+    ]
+
+
+def calculate_member_directory_component_breadth(
+    records: list[BlameRecord],
+) -> list[MemberDirectoryComponentBreadth]:
+    """Calculate directory and top-level component breadth by member.
+
+    Directory breadth counts distinct immediate parent directories. Component
+    breadth counts distinct top-level path components, which remains stable as
+    files move deeper within a component.
+    """
+
+    groups: dict[tuple[str, str, str, str], dict[str, set]] = defaultdict(
+        lambda: {"files": set(), "directories": set(), "components": set()}
+    )
+    for record in records:
+        key = (
+            record.organization,
+            record.repository,
+            record.author_name,
+            record.author_email,
+        )
+        path = PurePosixPath(record.blamed_file_path)
+        groups[key]["files"].add(record.blamed_file_path)
+        groups[key]["directories"].add(
+            str(path.parent) if str(path.parent) != "." else "(root)"
+        )
+        groups[key]["components"].add(path.parts[0] if len(path.parts) > 1 else "(root)")
+
+    return [
+        MemberDirectoryComponentBreadth(
+            organization=organization,
+            repository=repository,
+            author_name=author_name,
+            author_email=author_email,
+            files_contributed=len(values["files"]),
+            directory_breadth=len(values["directories"]),
+            component_breadth=len(values["components"]),
+        )
+        for (organization, repository, author_name, author_email), values in sorted(
+            groups.items()
+        )
     ]
