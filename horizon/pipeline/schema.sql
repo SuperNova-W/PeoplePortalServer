@@ -62,6 +62,18 @@ CREATE TABLE IF NOT EXISTS horizon_gt_features.member_moved_line_share (
     PRIMARY KEY (run_id, organization, repository, author_name, author_email)
 );
 
+CREATE TABLE IF NOT EXISTS horizon_gt_features.member_history_boundary_share (
+    run_id TEXT NOT NULL,
+    organization TEXT NOT NULL,
+    repository TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    author_email TEXT NOT NULL,
+    surviving_lines INTEGER NOT NULL CHECK (surviving_lines > 0),
+    history_boundary_lines INTEGER NOT NULL CHECK (history_boundary_lines >= 0),
+    history_boundary_share DOUBLE PRECISION NOT NULL CHECK (history_boundary_share >= 0 AND history_boundary_share <= 1),
+    PRIMARY KEY (run_id, organization, repository, author_name, author_email)
+);
+
 CREATE TABLE IF NOT EXISTS horizon_gt_features.member_repository_ownership (
     run_id TEXT NOT NULL,
     organization TEXT NOT NULL,
@@ -105,6 +117,9 @@ CREATE INDEX IF NOT EXISTS repository_orphaned_code_repository_idx
 
 CREATE INDEX IF NOT EXISTS member_moved_line_share_repository_idx
     ON horizon_gt_features.member_moved_line_share (run_id, organization, repository);
+
+CREATE INDEX IF NOT EXISTS member_history_boundary_share_repository_idx
+    ON horizon_gt_features.member_history_boundary_share (run_id, organization, repository);
 
 CREATE INDEX IF NOT EXISTS member_repository_ownership_repository_idx
     ON horizon_gt_features.member_repository_ownership (run_id, organization, repository);

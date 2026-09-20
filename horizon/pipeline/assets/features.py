@@ -10,10 +10,12 @@ from ..blame_parser import BlameRecord
 from ..blame_signals import (
     MemberMultiOwnerFiles,
     MemberMovedLines,
+    MemberHistoryBoundary,
     MemberOwnershipEntropy,
     RepositoryOrphanedCode,
     calculate_member_multi_owner_file_share,
     calculate_member_moved_line_share,
+    calculate_member_history_boundary_share,
     calculate_member_ownership_entropy,
     calculate_orphaned_code_share,
 )
@@ -86,6 +88,25 @@ MEMBER_MOVED_LINE_SHARE_SCHEMA = table_schema_from(
         "surviving_lines": ("int", "Current lines attributed to the author."),
         "moved_lines": ("int", "Lines whose origin file differs from the current file."),
         "moved_line_share": ("float", "moved_lines divided by surviving_lines."),
+    },
+)
+
+MEMBER_HISTORY_BOUNDARY_SHARE_SCHEMA = table_schema_from(
+    MemberHistoryBoundary,
+    {
+        "organization": ("string", "Gitea organization."),
+        "repository": ("string", "Repository being measured."),
+        "author_name": ("string", "Git author identity."),
+        "author_email": ("string", "Email portion of the Git author identity."),
+        "surviving_lines": ("int", "Current lines attributed to the author."),
+        "history_boundary_lines": (
+            "int",
+            "Lines for which git blame reached the repository history boundary.",
+        ),
+        "history_boundary_share": (
+            "float",
+            "history_boundary_lines divided by surviving_lines.",
+        ),
     },
 )
 
@@ -330,6 +351,39 @@ def member_moved_line_share(
     group_name="l4_features",
     kinds={"python", "postgres"},
     description=(
+        "Calculates the share of each member's surviving lines that reach the "
+        "repository history boundary."
+    ),
+    metadata={
+        "dagster/column_schema": MEMBER_HISTORY_BOUNDARY_SHARE_SCHEMA,
+        "preview": _empty_preview(MEMBER_HISTORY_BOUNDARY_SHARE_SCHEMA),
+        "table": "member_history_boundary_share",
+        "grain": "one row per run, repository, and author",
+        "source": "blame_records",
+    },
+)
+def member_history_boundary_share(
+    context: AssetExecutionContext,
+    blame_records: list[BlameRecord],
+    postgres: PostgresResource,
+) -> list[MemberHistoryBoundary]:
+    rows = calculate_member_history_boundary_share(blame_records)
+    postgres.write_member_history_boundary_share(context.run.run_id, rows)
+    context.add_output_metadata(
+        _feature_metadata(
+            "member_history_boundary_share",
+            rows,
+            MEMBER_HISTORY_BOUNDARY_SHARE_SCHEMA,
+            history_boundary_lines=sum(row.history_boundary_lines for row in rows),
+        )
+    )
+    return rows
+
+
+@asset(
+    group_name="l4_features",
+    kinds={"python", "postgres"},
+    description=(
         "Aggregates file ownership to repository ownership, including surviving "
         "lines, share, files touched, majority-owned files, and rank."
     ),
@@ -406,6 +460,7 @@ __all__ = [
     "MEMBER_OWNERSHIP_ENTROPY_SCHEMA",
     "REPOSITORY_ORPHANED_CODE_SCHEMA",
     "MEMBER_MOVED_LINE_SHARE_SCHEMA",
+    "MEMBER_HISTORY_BOUNDARY_SHARE_SCHEMA",
     "MEMBER_OWNERSHIP_SCHEMA",
     "MEMBER_REPOSITORY_OWNERSHIP_SCHEMA",
     "file_ownership",
@@ -413,6 +468,7 @@ __all__ = [
     "member_ownership_entropy",
     "repository_orphaned_code",
     "member_moved_line_share",
+    "member_history_boundary_share",
     "member_ownership",
     "member_repository_ownership",
 ]
