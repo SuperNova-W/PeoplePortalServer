@@ -35,6 +35,10 @@ class PostgresResource(ConfigurableResource):
 
         statements = (Path(__file__).parent / "schema.sql").read_text()
         with self.connect() as connection:
+            # Dagster can initialize several Postgres-backed assets in parallel.
+            # Serialize the DDL so concurrent CREATE TABLE IF NOT EXISTS calls
+            # cannot race inside PostgreSQL's type catalog.
+            connection.execute("SELECT pg_advisory_xact_lock(735814159)")
             connection.execute(statements)
 
     def write_file_ownership(
