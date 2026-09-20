@@ -17,6 +17,7 @@ from .features import (
     file_ownership,
     member_multi_owner_file_share,
     member_ownership_entropy,
+    repository_orphaned_code,
     member_ownership,
     member_repository_ownership,
 )
@@ -32,6 +33,7 @@ __all__ = [
     "gitea_repository",
     "member_multi_owner_file_share",
     "member_ownership_entropy",
+    "repository_orphaned_code",
     "member_ownership",
     "member_repository_ownership",
 ]

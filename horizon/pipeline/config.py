@@ -68,6 +68,11 @@ class PipelineSettings(BaseSettings):
         ),
         description="Postgres URL for the Horizon ownership feature store.",
     )
+    active_member_emails: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("HORIZON_ACTIVE_MEMBER_EMAILS"),
+        description="Comma-separated active member emails for orphaned-code signals.",
+    )
 
     def require_gitea_url(self) -> str:
         return _required(self.gitea_url, "HORIZON_GITEA_URL")

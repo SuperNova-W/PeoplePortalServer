@@ -9,7 +9,11 @@ from pathlib import Path
 import psycopg
 from dagster import ConfigurableResource
 
-from .blame_signals import MemberMultiOwnerFiles, MemberOwnershipEntropy
+from .blame_signals import (
+    MemberMultiOwnerFiles,
+    MemberOwnershipEntropy,
+    RepositoryOrphanedCode,
+)
 from .config import PipelineConfigError
 from .ownership import FileOwnership, MemberOwnership, MemberRepositoryOwnership
 
@@ -146,6 +150,40 @@ class PostgresResource(ConfigurableResource):
                     ) DO UPDATE SET
                         files_contributed = EXCLUDED.files_contributed,
                         ownership_entropy = EXCLUDED.ownership_entropy
+                    """,
+                    values,
+                )
+        return len(values)
+
+    def write_repository_orphaned_code(
+        self, run_id: str, rows: Sequence[RepositoryOrphanedCode]
+    ) -> int:
+        values = [
+            (
+                run_id,
+                row.organization,
+                row.repository,
+                row.surviving_lines,
+                row.orphaned_lines,
+                row.orphaned_code_share,
+                row.active_identities,
+            )
+            for row in rows
+        ]
+        self.ensure_schema()
+        with self.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO horizon_gt_features.repository_orphaned_code (
+                        run_id, organization, repository, surviving_lines,
+                        orphaned_lines, orphaned_code_share, active_identities
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (run_id, organization, repository) DO UPDATE SET
+                        surviving_lines = EXCLUDED.surviving_lines,
+                        orphaned_lines = EXCLUDED.orphaned_lines,
+                        orphaned_code_share = EXCLUDED.orphaned_code_share,
+                        active_identities = EXCLUDED.active_identities
                     """,
                     values,
                 )

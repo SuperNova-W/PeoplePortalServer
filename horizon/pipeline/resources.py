@@ -319,6 +319,25 @@ class GitWorkspace(ConfigurableResource):
         return result.stdout if result.ok else None
 
 
+class MemberRosterResource(ConfigurableResource):
+    """Active member roster used to classify orphaned surviving code."""
+
+    active_member_emails: str | None = None
+
+    def require_active_emails(self) -> frozenset[str]:
+        emails = frozenset(
+            email.strip().lower()
+            for email in (self.active_member_emails or "").split(",")
+            if email.strip()
+        )
+        if not emails:
+            raise PipelineConfigError(
+                "HORIZON_ACTIVE_MEMBER_EMAILS is not set. Provide a comma-separated "
+                "active member email roster before materializing orphaned code."
+            )
+        return emails
+
+
 def _path_safe(value: str) -> str:
     """Flatten a slug into one filename component."""
 
@@ -343,4 +362,7 @@ def build_resources(
         ),
         "workspace": GitWorkspace(),
         "postgres": PostgresResource(database_url=resolved.database_url),
+        "member_roster": MemberRosterResource(
+            active_member_emails=resolved.active_member_emails
+        ),
     }
