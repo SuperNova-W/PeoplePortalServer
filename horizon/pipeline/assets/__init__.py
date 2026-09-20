@@ -16,6 +16,7 @@ from .capture import BlameCapture, blame_capture
 from .features import (
     file_ownership,
     member_multi_owner_file_share,
+    member_ownership_entropy,
     member_ownership,
     member_repository_ownership,
 )
@@ -30,6 +31,7 @@ __all__ = [
     "file_ownership",
     "gitea_repository",
     "member_multi_owner_file_share",
+    "member_ownership_entropy",
     "member_ownership",
     "member_repository_ownership",
 ]

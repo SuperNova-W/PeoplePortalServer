@@ -9,7 +9,9 @@ from dagster import AssetExecutionContext, MetadataValue, TableRecord, asset
 from ..blame_parser import BlameRecord
 from ..blame_signals import (
     MemberMultiOwnerFiles,
+    MemberOwnershipEntropy,
     calculate_member_multi_owner_file_share,
+    calculate_member_ownership_entropy,
 )
 from ..metadata import table_schema_from
 from ..ownership import (
@@ -38,6 +40,21 @@ MEMBER_MULTI_OWNER_FILE_SHARE_SCHEMA = table_schema_from(
         "multi_owner_file_share": (
             "float",
             "multi_owner_files divided by files_contributed.",
+        ),
+    },
+)
+
+MEMBER_OWNERSHIP_ENTROPY_SCHEMA = table_schema_from(
+    MemberOwnershipEntropy,
+    {
+        "organization": ("string", "Gitea organization."),
+        "repository": ("string", "Repository being measured."),
+        "author_name": ("string", "Git author identity."),
+        "author_email": ("string", "Email portion of the Git author identity."),
+        "files_contributed": ("int", "Files with at least one surviving line by the author."),
+        "ownership_entropy": (
+            "float",
+            "Mean normalized line-owner entropy across contributed files.",
         ),
     },
 )
@@ -181,6 +198,38 @@ def member_multi_owner_file_share(
     group_name="l4_features",
     kinds={"python", "postgres"},
     description=(
+        "Calculates the normalized entropy of surviving-line ownership across "
+        "each member's contributed files."
+    ),
+    metadata={
+        "dagster/column_schema": MEMBER_OWNERSHIP_ENTROPY_SCHEMA,
+        "preview": _empty_preview(MEMBER_OWNERSHIP_ENTROPY_SCHEMA),
+        "table": "member_ownership_entropy",
+        "grain": "one row per run, repository, and author",
+        "source": "blame_records",
+    },
+)
+def member_ownership_entropy(
+    context: AssetExecutionContext,
+    blame_records: list[BlameRecord],
+    postgres: PostgresResource,
+) -> list[MemberOwnershipEntropy]:
+    rows = calculate_member_ownership_entropy(blame_records)
+    postgres.write_member_ownership_entropy(context.run.run_id, rows)
+    context.add_output_metadata(
+        _feature_metadata(
+            "member_ownership_entropy",
+            rows,
+            MEMBER_OWNERSHIP_ENTROPY_SCHEMA,
+        )
+    )
+    return rows
+
+
+@asset(
+    group_name="l4_features",
+    kinds={"python", "postgres"},
+    description=(
         "Aggregates file ownership to repository ownership, including surviving "
         "lines, share, files touched, majority-owned files, and rank."
     ),
@@ -254,10 +303,12 @@ def member_ownership(
 __all__ = [
     "FILE_OWNERSHIP_SCHEMA",
     "MEMBER_MULTI_OWNER_FILE_SHARE_SCHEMA",
+    "MEMBER_OWNERSHIP_ENTROPY_SCHEMA",
     "MEMBER_OWNERSHIP_SCHEMA",
     "MEMBER_REPOSITORY_OWNERSHIP_SCHEMA",
     "file_ownership",
     "member_multi_owner_file_share",
+    "member_ownership_entropy",
     "member_ownership",
     "member_repository_ownership",
 ]
