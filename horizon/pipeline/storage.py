@@ -11,6 +11,7 @@ from dagster import ConfigurableResource
 
 from .blame_signals import (
     MemberMultiOwnerFiles,
+    MemberMovedLines,
     MemberOwnershipEntropy,
     RepositoryOrphanedCode,
 )
@@ -184,6 +185,42 @@ class PostgresResource(ConfigurableResource):
                         orphaned_lines = EXCLUDED.orphaned_lines,
                         orphaned_code_share = EXCLUDED.orphaned_code_share,
                         active_identities = EXCLUDED.active_identities
+                    """,
+                    values,
+                )
+        return len(values)
+
+    def write_member_moved_line_share(
+        self, run_id: str, rows: Sequence[MemberMovedLines]
+    ) -> int:
+        values = [
+            (
+                run_id,
+                row.organization,
+                row.repository,
+                row.author_name,
+                row.author_email,
+                row.surviving_lines,
+                row.moved_lines,
+                row.moved_line_share,
+            )
+            for row in rows
+        ]
+        self.ensure_schema()
+        with self.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO horizon_gt_features.member_moved_line_share (
+                        run_id, organization, repository, author_name, author_email,
+                        surviving_lines, moved_lines, moved_line_share
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (
+                        run_id, organization, repository, author_name, author_email
+                    ) DO UPDATE SET
+                        surviving_lines = EXCLUDED.surviving_lines,
+                        moved_lines = EXCLUDED.moved_lines,
+                        moved_line_share = EXCLUDED.moved_line_share
                     """,
                     values,
                 )

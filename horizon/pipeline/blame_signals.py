@@ -46,6 +46,19 @@ class RepositoryOrphanedCode:
     active_identities: int
 
 
+@dataclass(frozen=True)
+class MemberMovedLines:
+    """Share of a member's surviving lines traced across file paths."""
+
+    organization: str
+    repository: str
+    author_name: str
+    author_email: str
+    surviving_lines: int
+    moved_lines: int
+    moved_line_share: float
+
+
 def calculate_member_multi_owner_file_share(
     records: list[BlameRecord],
 ) -> list[MemberMultiOwnerFiles]:
@@ -183,4 +196,40 @@ def calculate_orphaned_code_share(
         for (organization, repository), (surviving_lines, orphaned_lines) in sorted(
             counts.items()
         )
+    ]
+
+
+def calculate_member_moved_line_share(
+    records: list[BlameRecord],
+) -> list[MemberMovedLines]:
+    """Calculate the share of surviving lines moved between files."""
+
+    counts: dict[tuple[str, str, str, str], list[int]] = defaultdict(lambda: [0, 0])
+    for record in records:
+        key = (
+            record.organization,
+            record.repository,
+            record.author_name,
+            record.author_email,
+        )
+        counts[key][0] += 1
+        if record.moved_between_files:
+            counts[key][1] += 1
+
+    return [
+        MemberMovedLines(
+            organization=organization,
+            repository=repository,
+            author_name=author_name,
+            author_email=author_email,
+            surviving_lines=surviving_lines,
+            moved_lines=moved_lines,
+            moved_line_share=moved_lines / surviving_lines,
+        )
+        for (
+            organization,
+            repository,
+            author_name,
+            author_email,
+        ), (surviving_lines, moved_lines) in sorted(counts.items())
     ]

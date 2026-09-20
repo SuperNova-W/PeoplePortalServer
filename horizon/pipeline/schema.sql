@@ -50,6 +50,18 @@ CREATE TABLE IF NOT EXISTS horizon_gt_features.repository_orphaned_code (
     PRIMARY KEY (run_id, organization, repository)
 );
 
+CREATE TABLE IF NOT EXISTS horizon_gt_features.member_moved_line_share (
+    run_id TEXT NOT NULL,
+    organization TEXT NOT NULL,
+    repository TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    author_email TEXT NOT NULL,
+    surviving_lines INTEGER NOT NULL CHECK (surviving_lines > 0),
+    moved_lines INTEGER NOT NULL CHECK (moved_lines >= 0),
+    moved_line_share DOUBLE PRECISION NOT NULL CHECK (moved_line_share >= 0 AND moved_line_share <= 1),
+    PRIMARY KEY (run_id, organization, repository, author_name, author_email)
+);
+
 CREATE TABLE IF NOT EXISTS horizon_gt_features.member_repository_ownership (
     run_id TEXT NOT NULL,
     organization TEXT NOT NULL,
@@ -90,6 +102,9 @@ CREATE INDEX IF NOT EXISTS member_ownership_entropy_repository_idx
 
 CREATE INDEX IF NOT EXISTS repository_orphaned_code_repository_idx
     ON horizon_gt_features.repository_orphaned_code (run_id, organization, repository);
+
+CREATE INDEX IF NOT EXISTS member_moved_line_share_repository_idx
+    ON horizon_gt_features.member_moved_line_share (run_id, organization, repository);
 
 CREATE INDEX IF NOT EXISTS member_repository_ownership_repository_idx
     ON horizon_gt_features.member_repository_ownership (run_id, organization, repository);
