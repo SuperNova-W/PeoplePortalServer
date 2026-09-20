@@ -86,6 +86,18 @@ CREATE TABLE IF NOT EXISTS horizon_gt_features.member_directory_component_breadt
     PRIMARY KEY (run_id, organization, repository, author_name, author_email)
 );
 
+CREATE TABLE IF NOT EXISTS horizon_gt_features.member_stale_line_share (
+    run_id TEXT NOT NULL,
+    organization TEXT NOT NULL,
+    repository TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    author_email TEXT NOT NULL,
+    surviving_lines INTEGER NOT NULL CHECK (surviving_lines > 0),
+    stale_lines INTEGER NOT NULL CHECK (stale_lines >= 0),
+    stale_line_share DOUBLE PRECISION NOT NULL CHECK (stale_line_share >= 0 AND stale_line_share <= 1),
+    PRIMARY KEY (run_id, organization, repository, author_name, author_email)
+);
+
 CREATE TABLE IF NOT EXISTS horizon_gt_features.member_repository_ownership (
     run_id TEXT NOT NULL,
     organization TEXT NOT NULL,
@@ -135,6 +147,9 @@ CREATE INDEX IF NOT EXISTS member_history_boundary_share_repository_idx
 
 CREATE INDEX IF NOT EXISTS member_directory_component_breadth_repository_idx
     ON horizon_gt_features.member_directory_component_breadth (run_id, organization, repository);
+
+CREATE INDEX IF NOT EXISTS member_stale_line_share_repository_idx
+    ON horizon_gt_features.member_stale_line_share (run_id, organization, repository);
 
 CREATE INDEX IF NOT EXISTS member_repository_ownership_repository_idx
     ON horizon_gt_features.member_repository_ownership (run_id, organization, repository);

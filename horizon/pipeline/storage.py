@@ -15,6 +15,7 @@ from .blame_signals import (
     MemberHistoryBoundary,
     MemberDirectoryComponentBreadth,
     MemberOwnershipEntropy,
+    MemberStaleLines,
     RepositoryOrphanedCode,
 )
 from .config import PipelineConfigError
@@ -295,6 +296,42 @@ class PostgresResource(ConfigurableResource):
                         files_contributed = EXCLUDED.files_contributed,
                         directory_breadth = EXCLUDED.directory_breadth,
                         component_breadth = EXCLUDED.component_breadth
+                    """,
+                    values,
+                )
+        return len(values)
+
+    def write_member_stale_line_share(
+        self, run_id: str, rows: Sequence[MemberStaleLines]
+    ) -> int:
+        values = [
+            (
+                run_id,
+                row.organization,
+                row.repository,
+                row.author_name,
+                row.author_email,
+                row.surviving_lines,
+                row.stale_lines,
+                row.stale_line_share,
+            )
+            for row in rows
+        ]
+        self.ensure_schema()
+        with self.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO horizon_gt_features.member_stale_line_share (
+                        run_id, organization, repository, author_name, author_email,
+                        surviving_lines, stale_lines, stale_line_share
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (
+                        run_id, organization, repository, author_name, author_email
+                    ) DO UPDATE SET
+                        surviving_lines = EXCLUDED.surviving_lines,
+                        stale_lines = EXCLUDED.stale_lines,
+                        stale_line_share = EXCLUDED.stale_line_share
                     """,
                     values,
                 )
