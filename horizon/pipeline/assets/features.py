@@ -7,6 +7,10 @@ from dataclasses import asdict
 from dagster import AssetExecutionContext, MetadataValue, TableRecord, asset
 
 from ..blame_parser import BlameRecord
+from ..blame_signals import (
+    MemberMultiOwnerFiles,
+    calculate_member_multi_owner_file_share,
+)
 from ..metadata import table_schema_from
 from ..ownership import (
     FileOwnership,
@@ -17,6 +21,26 @@ from ..ownership import (
     calculate_member_repository_ownership,
 )
 from ..storage import PostgresResource
+
+
+MEMBER_MULTI_OWNER_FILE_SHARE_SCHEMA = table_schema_from(
+    MemberMultiOwnerFiles,
+    {
+        "organization": ("string", "Gitea organization."),
+        "repository": ("string", "Repository being measured."),
+        "author_name": ("string", "Git author identity."),
+        "author_email": ("string", "Email portion of the Git author identity."),
+        "files_contributed": ("int", "Files with at least one surviving line by the author."),
+        "multi_owner_files": (
+            "int",
+            "Contributed files with more than one surviving line owner.",
+        ),
+        "multi_owner_file_share": (
+            "float",
+            "multi_owner_files divided by files_contributed.",
+        ),
+    },
+)
 
 
 FILE_OWNERSHIP_SCHEMA = table_schema_from(
@@ -124,6 +148,39 @@ def file_ownership(
     group_name="l4_features",
     kinds={"python", "postgres"},
     description=(
+        "Calculates the share of each member's contributed files that have "
+        "multiple surviving-line owners."
+    ),
+    metadata={
+        "dagster/column_schema": MEMBER_MULTI_OWNER_FILE_SHARE_SCHEMA,
+        "preview": _empty_preview(MEMBER_MULTI_OWNER_FILE_SHARE_SCHEMA),
+        "table": "member_multi_owner_file_share",
+        "grain": "one row per run, repository, and author",
+        "source": "blame_records",
+    },
+)
+def member_multi_owner_file_share(
+    context: AssetExecutionContext,
+    blame_records: list[BlameRecord],
+    postgres: PostgresResource,
+) -> list[MemberMultiOwnerFiles]:
+    rows = calculate_member_multi_owner_file_share(blame_records)
+    postgres.write_member_multi_owner_file_share(context.run.run_id, rows)
+    context.add_output_metadata(
+        _feature_metadata(
+            "member_multi_owner_file_share",
+            rows,
+            MEMBER_MULTI_OWNER_FILE_SHARE_SCHEMA,
+            multi_owner_files=sum(row.multi_owner_files for row in rows),
+        )
+    )
+    return rows
+
+
+@asset(
+    group_name="l4_features",
+    kinds={"python", "postgres"},
+    description=(
         "Aggregates file ownership to repository ownership, including surviving "
         "lines, share, files touched, majority-owned files, and rank."
     ),
@@ -196,9 +253,11 @@ def member_ownership(
 
 __all__ = [
     "FILE_OWNERSHIP_SCHEMA",
+    "MEMBER_MULTI_OWNER_FILE_SHARE_SCHEMA",
     "MEMBER_OWNERSHIP_SCHEMA",
     "MEMBER_REPOSITORY_OWNERSHIP_SCHEMA",
     "file_ownership",
+    "member_multi_owner_file_share",
     "member_ownership",
     "member_repository_ownership",
 ]

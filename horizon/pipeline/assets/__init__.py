@@ -13,7 +13,12 @@ of assets. Later PRs add ``l5_mart``.
 """
 
 from .capture import BlameCapture, blame_capture
-from .features import file_ownership, member_ownership, member_repository_ownership
+from .features import (
+    file_ownership,
+    member_multi_owner_file_share,
+    member_ownership,
+    member_repository_ownership,
+)
 from .parse import blame_records
 from .source import RepositoryConfig, gitea_repository
 
@@ -24,6 +29,7 @@ __all__ = [
     "blame_records",
     "file_ownership",
     "gitea_repository",
+    "member_multi_owner_file_share",
     "member_ownership",
     "member_repository_ownership",
 ]

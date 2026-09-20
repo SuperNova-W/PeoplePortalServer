@@ -9,6 +9,7 @@ from pathlib import Path
 import psycopg
 from dagster import ConfigurableResource
 
+from .blame_signals import MemberMultiOwnerFiles
 from .config import PipelineConfigError
 from .ownership import FileOwnership, MemberOwnership, MemberRepositoryOwnership
 
@@ -75,6 +76,42 @@ class PostgresResource(ConfigurableResource):
                         surviving_lines = EXCLUDED.surviving_lines,
                         file_lines = EXCLUDED.file_lines,
                         ownership_share = EXCLUDED.ownership_share
+                    """,
+                    values,
+                )
+        return len(values)
+
+    def write_member_multi_owner_file_share(
+        self, run_id: str, rows: Sequence[MemberMultiOwnerFiles]
+    ) -> int:
+        values = [
+            (
+                run_id,
+                row.organization,
+                row.repository,
+                row.author_name,
+                row.author_email,
+                row.files_contributed,
+                row.multi_owner_files,
+                row.multi_owner_file_share,
+            )
+            for row in rows
+        ]
+        self.ensure_schema()
+        with self.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO horizon_gt_features.member_multi_owner_file_share (
+                        run_id, organization, repository, author_name, author_email,
+                        files_contributed, multi_owner_files, multi_owner_file_share
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (
+                        run_id, organization, repository, author_name, author_email
+                    ) DO UPDATE SET
+                        files_contributed = EXCLUDED.files_contributed,
+                        multi_owner_files = EXCLUDED.multi_owner_files,
+                        multi_owner_file_share = EXCLUDED.multi_owner_file_share
                     """,
                     values,
                 )

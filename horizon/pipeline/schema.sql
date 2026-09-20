@@ -16,6 +16,18 @@ CREATE TABLE IF NOT EXISTS horizon_gt_features.file_ownership (
     PRIMARY KEY (run_id, organization, repository, file_path, author_name, author_email)
 );
 
+CREATE TABLE IF NOT EXISTS horizon_gt_features.member_multi_owner_file_share (
+    run_id TEXT NOT NULL,
+    organization TEXT NOT NULL,
+    repository TEXT NOT NULL,
+    author_name TEXT NOT NULL,
+    author_email TEXT NOT NULL,
+    files_contributed INTEGER NOT NULL CHECK (files_contributed > 0),
+    multi_owner_files INTEGER NOT NULL CHECK (multi_owner_files >= 0),
+    multi_owner_file_share DOUBLE PRECISION NOT NULL CHECK (multi_owner_file_share >= 0 AND multi_owner_file_share <= 1),
+    PRIMARY KEY (run_id, organization, repository, author_name, author_email)
+);
+
 CREATE TABLE IF NOT EXISTS horizon_gt_features.member_repository_ownership (
     run_id TEXT NOT NULL,
     organization TEXT NOT NULL,
@@ -47,6 +59,9 @@ CREATE TABLE IF NOT EXISTS horizon_gt_features.member_ownership (
 
 CREATE INDEX IF NOT EXISTS file_ownership_repository_idx
     ON horizon_gt_features.file_ownership (run_id, organization, repository);
+
+CREATE INDEX IF NOT EXISTS member_multi_owner_file_share_repository_idx
+    ON horizon_gt_features.member_multi_owner_file_share (run_id, organization, repository);
 
 CREATE INDEX IF NOT EXISTS member_repository_ownership_repository_idx
     ON horizon_gt_features.member_repository_ownership (run_id, organization, repository);
