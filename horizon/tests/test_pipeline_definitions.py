@@ -15,6 +15,7 @@ ASSET_KEYS = {
     AssetKey("blame_capture"),
     AssetKey("blame_records"),
     AssetKey("file_ownership"),
+    AssetKey("member_multi_owner_file_share"),
     AssetKey("member_repository_ownership"),
     AssetKey("member_ownership"),
 }
@@ -37,12 +38,16 @@ def test_the_layers_depend_on_each_other_in_order():
     capture = assets_by_key[AssetKey("blame_capture")]
     records = assets_by_key[AssetKey("blame_records")]
     file_ownership = assets_by_key[AssetKey("file_ownership")]
+    multi_owner = assets_by_key[AssetKey("member_multi_owner_file_share")]
     repository_ownership = assets_by_key[AssetKey("member_repository_ownership")]
     member_ownership = assets_by_key[AssetKey("member_ownership")]
 
     assert AssetKey("gitea_repository") in capture.asset_deps[AssetKey("blame_capture")]
     assert AssetKey("blame_capture") in records.asset_deps[AssetKey("blame_records")]
     assert AssetKey("blame_records") in file_ownership.asset_deps[AssetKey("file_ownership")]
+    assert AssetKey("blame_records") in multi_owner.asset_deps[
+        AssetKey("member_multi_owner_file_share")
+    ]
     assert AssetKey("file_ownership") in repository_ownership.asset_deps[
         AssetKey("member_repository_ownership")
     ]
@@ -66,6 +71,7 @@ def test_each_layer_is_its_own_group():
         "blame_capture": "l2_capture",
         "blame_records": "l3_parse",
         "file_ownership": "l4_features",
+        "member_multi_owner_file_share": "l4_features",
         "member_repository_ownership": "l4_features",
         "member_ownership": "l4_features",
     }

@@ -14,6 +14,7 @@ from .assets import (
     blame_records,
     file_ownership,
     gitea_repository,
+    member_multi_owner_file_share,
     member_ownership,
     member_repository_ownership,
 )
@@ -30,6 +31,7 @@ defs = Definitions(
         blame_capture,
         blame_records,
         file_ownership,
+        member_multi_owner_file_share,
         member_repository_ownership,
         member_ownership,
     ],
