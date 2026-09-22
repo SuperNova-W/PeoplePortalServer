@@ -2,6 +2,7 @@ from pipeline.blame_parser import BlameRecord
 from pipeline.blame_signals import (
     calculate_member_multi_owner_file_share,
     calculate_member_ownership_entropy,
+    calculate_orphaned_code_share,
 )
 
 
@@ -59,3 +60,24 @@ def test_ownership_entropy_is_zero_for_single_owner_and_one_when_balanced():
     alice = next(row for row in rows if row.author_name == "Alice")
     assert alice.files_contributed == 2
     assert alice.ownership_entropy == 0.5
+
+
+def test_orphaned_code_uses_active_email_roster():
+    records = [
+        record(path="src/a.py", author="Alice", email="a@example.com"),
+        record(path="src/b.py", author="Former", email="former@example.com"),
+    ]
+
+    row = calculate_orphaned_code_share(records, {"a@example.com"})[0]
+    assert row.surviving_lines == 2
+    assert row.orphaned_lines == 1
+    assert row.orphaned_code_share == 0.5
+
+
+def test_orphaned_code_requires_a_nonempty_roster():
+    try:
+        calculate_orphaned_code_share([], set())
+    except ValueError as exc:
+        assert "active member email roster" in str(exc)
+    else:
+        raise AssertionError("expected an empty roster to fail clearly")

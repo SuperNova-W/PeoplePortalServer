@@ -9,6 +9,7 @@ def test_settings_load_with_nothing_configured():
 
     assert settings.gitea_url is None
     assert settings.database_url is None
+    assert settings.active_member_emails is None
 
 
 def test_settings_read_horizon_and_legacy_phi_variable_names(monkeypatch):
@@ -21,6 +22,12 @@ def test_settings_read_horizon_and_legacy_phi_variable_names(monkeypatch):
     assert settings.database_url == "postgresql://u@127.0.0.1:5433/db"
     assert settings.gitea_url == "https://git.example.com"
     assert settings.gitea_api_token == "token-value"
+
+
+def test_settings_read_active_member_emails(monkeypatch):
+    monkeypatch.setenv("HORIZON_ACTIVE_MEMBER_EMAILS", "a@example.com,b@example.com")
+
+    assert PipelineSettings().active_member_emails == "a@example.com,b@example.com"
 
 
 def test_horizon_prefixed_names_win_over_the_legacy_ones(monkeypatch):

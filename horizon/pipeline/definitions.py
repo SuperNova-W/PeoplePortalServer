@@ -16,6 +16,7 @@ from .assets import (
     gitea_repository,
     member_multi_owner_file_share,
     member_ownership_entropy,
+    repository_orphaned_code,
     member_ownership,
     member_repository_ownership,
 )
@@ -34,6 +35,7 @@ defs = Definitions(
         file_ownership,
         member_multi_owner_file_share,
         member_ownership_entropy,
+        repository_orphaned_code,
         member_repository_ownership,
         member_ownership,
     ],

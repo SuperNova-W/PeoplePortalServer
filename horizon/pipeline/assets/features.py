@@ -10,8 +10,10 @@ from ..blame_parser import BlameRecord
 from ..blame_signals import (
     MemberMultiOwnerFiles,
     MemberOwnershipEntropy,
+    RepositoryOrphanedCode,
     calculate_member_multi_owner_file_share,
     calculate_member_ownership_entropy,
+    calculate_orphaned_code_share,
 )
 from ..metadata import table_schema_from
 from ..ownership import (
@@ -22,6 +24,7 @@ from ..ownership import (
     calculate_member_ownership,
     calculate_member_repository_ownership,
 )
+from ..resources import MemberRosterResource
 from ..storage import PostgresResource
 
 
@@ -56,6 +59,18 @@ MEMBER_OWNERSHIP_ENTROPY_SCHEMA = table_schema_from(
             "float",
             "Mean normalized line-owner entropy across contributed files.",
         ),
+    },
+)
+
+REPOSITORY_ORPHANED_CODE_SCHEMA = table_schema_from(
+    RepositoryOrphanedCode,
+    {
+        "organization": ("string", "Gitea organization."),
+        "repository": ("string", "Repository being measured."),
+        "surviving_lines": ("int", "Current lines in the repository."),
+        "orphaned_lines": ("int", "Lines owned by emails outside the active roster."),
+        "orphaned_code_share": ("float", "orphaned_lines divided by surviving_lines."),
+        "active_identities": ("int", "Number of active emails used for classification."),
     },
 )
 
@@ -230,6 +245,43 @@ def member_ownership_entropy(
     group_name="l4_features",
     kinds={"python", "postgres"},
     description=(
+        "Calculates the repository share of surviving lines owned by emails "
+        "outside the configured active member roster."
+    ),
+    metadata={
+        "dagster/column_schema": REPOSITORY_ORPHANED_CODE_SCHEMA,
+        "preview": _empty_preview(REPOSITORY_ORPHANED_CODE_SCHEMA),
+        "table": "repository_orphaned_code",
+        "grain": "one row per run and repository",
+        "source": "blame_records + member_roster",
+    },
+)
+def repository_orphaned_code(
+    context: AssetExecutionContext,
+    blame_records: list[BlameRecord],
+    member_roster: MemberRosterResource,
+    postgres: PostgresResource,
+) -> list[RepositoryOrphanedCode]:
+    rows = calculate_orphaned_code_share(
+        blame_records,
+        member_roster.require_active_emails(),
+    )
+    postgres.write_repository_orphaned_code(context.run.run_id, rows)
+    context.add_output_metadata(
+        _feature_metadata(
+            "repository_orphaned_code",
+            rows,
+            REPOSITORY_ORPHANED_CODE_SCHEMA,
+            orphaned_lines=sum(row.orphaned_lines for row in rows),
+        )
+    )
+    return rows
+
+
+@asset(
+    group_name="l4_features",
+    kinds={"python", "postgres"},
+    description=(
         "Aggregates file ownership to repository ownership, including surviving "
         "lines, share, files touched, majority-owned files, and rank."
     ),
@@ -304,11 +356,13 @@ __all__ = [
     "FILE_OWNERSHIP_SCHEMA",
     "MEMBER_MULTI_OWNER_FILE_SHARE_SCHEMA",
     "MEMBER_OWNERSHIP_ENTROPY_SCHEMA",
+    "REPOSITORY_ORPHANED_CODE_SCHEMA",
     "MEMBER_OWNERSHIP_SCHEMA",
     "MEMBER_REPOSITORY_OWNERSHIP_SCHEMA",
     "file_ownership",
     "member_multi_owner_file_share",
     "member_ownership_entropy",
+    "repository_orphaned_code",
     "member_ownership",
     "member_repository_ownership",
 ]

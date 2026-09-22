@@ -34,6 +34,18 @@ class MemberOwnershipEntropy:
     ownership_entropy: float
 
 
+@dataclass(frozen=True)
+class RepositoryOrphanedCode:
+    """Lines owned by identities outside the active member roster."""
+
+    organization: str
+    repository: str
+    surviving_lines: int
+    orphaned_lines: int
+    orphaned_code_share: float
+    active_identities: int
+
+
 def calculate_member_multi_owner_file_share(
     records: list[BlameRecord],
 ) -> list[MemberMultiOwnerFiles]:
@@ -136,3 +148,39 @@ def calculate_member_ownership_entropy(
             row.author_name,
         ),
     )
+
+
+def calculate_orphaned_code_share(
+    records: list[BlameRecord],
+    active_emails: set[str] | frozenset[str],
+) -> list[RepositoryOrphanedCode]:
+    """Calculate code owned by authors outside the configured active roster."""
+
+    normalized_emails = {
+        email.strip().lower() for email in active_emails if email.strip()
+    }
+    if not normalized_emails:
+        raise ValueError(
+            "an active member email roster is required to calculate orphaned code"
+        )
+
+    counts: dict[tuple[str, str], list[int]] = defaultdict(lambda: [0, 0])
+    for record in records:
+        key = (record.organization, record.repository)
+        counts[key][0] += 1
+        if record.author_email.strip().lower() not in normalized_emails:
+            counts[key][1] += 1
+
+    return [
+        RepositoryOrphanedCode(
+            organization=organization,
+            repository=repository,
+            surviving_lines=surviving_lines,
+            orphaned_lines=orphaned_lines,
+            orphaned_code_share=orphaned_lines / surviving_lines,
+            active_identities=len(normalized_emails),
+        )
+        for (organization, repository), (surviving_lines, orphaned_lines) in sorted(
+            counts.items()
+        )
+    ]
