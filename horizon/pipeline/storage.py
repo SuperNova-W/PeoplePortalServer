@@ -13,6 +13,7 @@ from .blame_signals import (
     MemberMultiOwnerFiles,
     MemberMovedLines,
     MemberHistoryBoundary,
+    MemberDirectoryComponentBreadth,
     MemberOwnershipEntropy,
     RepositoryOrphanedCode,
 )
@@ -258,6 +259,42 @@ class PostgresResource(ConfigurableResource):
                         surviving_lines = EXCLUDED.surviving_lines,
                         history_boundary_lines = EXCLUDED.history_boundary_lines,
                         history_boundary_share = EXCLUDED.history_boundary_share
+                    """,
+                    values,
+                )
+        return len(values)
+
+    def write_member_directory_component_breadth(
+        self, run_id: str, rows: Sequence[MemberDirectoryComponentBreadth]
+    ) -> int:
+        values = [
+            (
+                run_id,
+                row.organization,
+                row.repository,
+                row.author_name,
+                row.author_email,
+                row.files_contributed,
+                row.directory_breadth,
+                row.component_breadth,
+            )
+            for row in rows
+        ]
+        self.ensure_schema()
+        with self.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO horizon_gt_features.member_directory_component_breadth (
+                        run_id, organization, repository, author_name, author_email,
+                        files_contributed, directory_breadth, component_breadth
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (
+                        run_id, organization, repository, author_name, author_email
+                    ) DO UPDATE SET
+                        files_contributed = EXCLUDED.files_contributed,
+                        directory_breadth = EXCLUDED.directory_breadth,
+                        component_breadth = EXCLUDED.component_breadth
                     """,
                     values,
                 )

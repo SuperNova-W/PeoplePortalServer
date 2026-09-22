@@ -5,6 +5,7 @@ from pipeline.blame_signals import (
     calculate_member_ownership_entropy,
     calculate_member_moved_line_share,
     calculate_member_history_boundary_share,
+    calculate_member_directory_component_breadth,
     calculate_orphaned_code_share,
 )
 
@@ -116,3 +117,17 @@ def test_history_boundary_share_counts_boundary_lines():
 
     assert rows[0].history_boundary_lines == 1
     assert rows[0].history_boundary_share == 0.5
+
+
+def test_directory_and_component_breadth_are_distinct():
+    rows = calculate_member_directory_component_breadth(
+        [
+            record(path="src/api/routes.py", author="Alice", email="a@example.com"),
+            record(path="src/ui/app.ts", author="Alice", email="a@example.com"),
+            record(path="docs/readme.md", author="Alice", email="a@example.com"),
+        ]
+    )
+
+    assert rows[0].files_contributed == 3
+    assert rows[0].directory_breadth == 3
+    assert rows[0].component_breadth == 2

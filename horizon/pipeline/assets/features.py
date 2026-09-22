@@ -11,11 +11,13 @@ from ..blame_signals import (
     MemberMultiOwnerFiles,
     MemberMovedLines,
     MemberHistoryBoundary,
+    MemberDirectoryComponentBreadth,
     MemberOwnershipEntropy,
     RepositoryOrphanedCode,
     calculate_member_multi_owner_file_share,
     calculate_member_moved_line_share,
     calculate_member_history_boundary_share,
+    calculate_member_directory_component_breadth,
     calculate_member_ownership_entropy,
     calculate_orphaned_code_share,
 )
@@ -106,6 +108,25 @@ MEMBER_HISTORY_BOUNDARY_SHARE_SCHEMA = table_schema_from(
         "history_boundary_share": (
             "float",
             "history_boundary_lines divided by surviving_lines.",
+        ),
+    },
+)
+
+MEMBER_DIRECTORY_COMPONENT_BREADTH_SCHEMA = table_schema_from(
+    MemberDirectoryComponentBreadth,
+    {
+        "organization": ("string", "Gitea organization."),
+        "repository": ("string", "Repository being measured."),
+        "author_name": ("string", "Git author identity."),
+        "author_email": ("string", "Email portion of the Git author identity."),
+        "files_contributed": ("int", "Files with at least one surviving line by the author."),
+        "directory_breadth": (
+            "int",
+            "Distinct immediate parent directories containing the author's files.",
+        ),
+        "component_breadth": (
+            "int",
+            "Distinct top-level path components containing the author's files.",
         ),
     },
 )
@@ -384,6 +405,38 @@ def member_history_boundary_share(
     group_name="l4_features",
     kinds={"python", "postgres"},
     description=(
+        "Calculates each member's breadth across immediate directories and "
+        "top-level repository components."
+    ),
+    metadata={
+        "dagster/column_schema": MEMBER_DIRECTORY_COMPONENT_BREADTH_SCHEMA,
+        "preview": _empty_preview(MEMBER_DIRECTORY_COMPONENT_BREADTH_SCHEMA),
+        "table": "member_directory_component_breadth",
+        "grain": "one row per run, repository, and author",
+        "source": "blame_records",
+    },
+)
+def member_directory_component_breadth(
+    context: AssetExecutionContext,
+    blame_records: list[BlameRecord],
+    postgres: PostgresResource,
+) -> list[MemberDirectoryComponentBreadth]:
+    rows = calculate_member_directory_component_breadth(blame_records)
+    postgres.write_member_directory_component_breadth(context.run.run_id, rows)
+    context.add_output_metadata(
+        _feature_metadata(
+            "member_directory_component_breadth",
+            rows,
+            MEMBER_DIRECTORY_COMPONENT_BREADTH_SCHEMA,
+        )
+    )
+    return rows
+
+
+@asset(
+    group_name="l4_features",
+    kinds={"python", "postgres"},
+    description=(
         "Aggregates file ownership to repository ownership, including surviving "
         "lines, share, files touched, majority-owned files, and rank."
     ),
@@ -461,6 +514,7 @@ __all__ = [
     "REPOSITORY_ORPHANED_CODE_SCHEMA",
     "MEMBER_MOVED_LINE_SHARE_SCHEMA",
     "MEMBER_HISTORY_BOUNDARY_SHARE_SCHEMA",
+    "MEMBER_DIRECTORY_COMPONENT_BREADTH_SCHEMA",
     "MEMBER_OWNERSHIP_SCHEMA",
     "MEMBER_REPOSITORY_OWNERSHIP_SCHEMA",
     "file_ownership",
@@ -469,6 +523,7 @@ __all__ = [
     "repository_orphaned_code",
     "member_moved_line_share",
     "member_history_boundary_share",
+    "member_directory_component_breadth",
     "member_ownership",
     "member_repository_ownership",
 ]
