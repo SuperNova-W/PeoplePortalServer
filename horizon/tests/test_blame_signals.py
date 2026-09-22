@@ -4,6 +4,7 @@ from pipeline.blame_signals import (
     calculate_member_multi_owner_file_share,
     calculate_member_ownership_entropy,
     calculate_member_moved_line_share,
+    calculate_member_history_boundary_share,
     calculate_orphaned_code_share,
 )
 
@@ -93,3 +94,25 @@ def test_moved_line_share_uses_blame_file_lineage():
     assert row.surviving_lines == 2
     assert row.moved_lines == 1
     assert row.moved_line_share == 0.5
+
+
+def test_history_boundary_share_counts_boundary_lines():
+    rows = calculate_member_history_boundary_share(
+        [
+            record(path="src/a.py", author="Alice", email="a@example.com"),
+            BlameRecord(
+                **{
+                    **record(
+                        path="src/a.py",
+                        author="Alice",
+                        email="a@example.com",
+                    ).__dict__,
+                    "reaches_history_boundary": True,
+                    "commit_sha": "boundary",
+                }
+            ),
+        ]
+    )
+
+    assert rows[0].history_boundary_lines == 1
+    assert rows[0].history_boundary_share == 0.5

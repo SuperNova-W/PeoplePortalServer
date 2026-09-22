@@ -12,6 +12,7 @@ from dagster import ConfigurableResource
 from .blame_signals import (
     MemberMultiOwnerFiles,
     MemberMovedLines,
+    MemberHistoryBoundary,
     MemberOwnershipEntropy,
     RepositoryOrphanedCode,
 )
@@ -221,6 +222,42 @@ class PostgresResource(ConfigurableResource):
                         surviving_lines = EXCLUDED.surviving_lines,
                         moved_lines = EXCLUDED.moved_lines,
                         moved_line_share = EXCLUDED.moved_line_share
+                    """,
+                    values,
+                )
+        return len(values)
+
+    def write_member_history_boundary_share(
+        self, run_id: str, rows: Sequence[MemberHistoryBoundary]
+    ) -> int:
+        values = [
+            (
+                run_id,
+                row.organization,
+                row.repository,
+                row.author_name,
+                row.author_email,
+                row.surviving_lines,
+                row.history_boundary_lines,
+                row.history_boundary_share,
+            )
+            for row in rows
+        ]
+        self.ensure_schema()
+        with self.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO horizon_gt_features.member_history_boundary_share (
+                        run_id, organization, repository, author_name, author_email,
+                        surviving_lines, history_boundary_lines, history_boundary_share
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (
+                        run_id, organization, repository, author_name, author_email
+                    ) DO UPDATE SET
+                        surviving_lines = EXCLUDED.surviving_lines,
+                        history_boundary_lines = EXCLUDED.history_boundary_lines,
+                        history_boundary_share = EXCLUDED.history_boundary_share
                     """,
                     values,
                 )

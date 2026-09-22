@@ -59,6 +59,19 @@ class MemberMovedLines:
     moved_line_share: float
 
 
+@dataclass(frozen=True)
+class MemberHistoryBoundary:
+    """Share of a member's lines that reach the repository history boundary."""
+
+    organization: str
+    repository: str
+    author_name: str
+    author_email: str
+    surviving_lines: int
+    history_boundary_lines: int
+    history_boundary_share: float
+
+
 def calculate_member_multi_owner_file_share(
     records: list[BlameRecord],
 ) -> list[MemberMultiOwnerFiles]:
@@ -232,4 +245,40 @@ def calculate_member_moved_line_share(
             author_name,
             author_email,
         ), (surviving_lines, moved_lines) in sorted(counts.items())
+    ]
+
+
+def calculate_member_history_boundary_share(
+    records: list[BlameRecord],
+) -> list[MemberHistoryBoundary]:
+    """Calculate the share of surviving lines that reach Git's boundary."""
+
+    counts: dict[tuple[str, str, str, str], list[int]] = defaultdict(lambda: [0, 0])
+    for record in records:
+        key = (
+            record.organization,
+            record.repository,
+            record.author_name,
+            record.author_email,
+        )
+        counts[key][0] += 1
+        if record.reaches_history_boundary:
+            counts[key][1] += 1
+
+    return [
+        MemberHistoryBoundary(
+            organization=organization,
+            repository=repository,
+            author_name=author_name,
+            author_email=author_email,
+            surviving_lines=surviving_lines,
+            history_boundary_lines=history_boundary_lines,
+            history_boundary_share=history_boundary_lines / surviving_lines,
+        )
+        for (
+            organization,
+            repository,
+            author_name,
+            author_email,
+        ), (surviving_lines, history_boundary_lines) in sorted(counts.items())
     ]

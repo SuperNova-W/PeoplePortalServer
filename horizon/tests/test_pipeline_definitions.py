@@ -20,6 +20,7 @@ ASSET_KEYS = {
     AssetKey("member_ownership_entropy"),
     AssetKey("repository_orphaned_code"),
     AssetKey("member_moved_line_share"),
+    AssetKey("member_history_boundary_share"),
     AssetKey("member_repository_ownership"),
     AssetKey("member_ownership"),
 }
@@ -46,6 +47,7 @@ def test_the_layers_depend_on_each_other_in_order():
     entropy = assets_by_key[AssetKey("member_ownership_entropy")]
     orphaned_code = assets_by_key[AssetKey("repository_orphaned_code")]
     moved_lines = assets_by_key[AssetKey("member_moved_line_share")]
+    boundary_lines = assets_by_key[AssetKey("member_history_boundary_share")]
     repository_ownership = assets_by_key[AssetKey("member_repository_ownership")]
     member_ownership = assets_by_key[AssetKey("member_ownership")]
 
@@ -63,6 +65,9 @@ def test_the_layers_depend_on_each_other_in_order():
     ]
     assert AssetKey("blame_records") in moved_lines.asset_deps[
         AssetKey("member_moved_line_share")
+    ]
+    assert AssetKey("blame_records") in boundary_lines.asset_deps[
+        AssetKey("member_history_boundary_share")
     ]
     assert AssetKey("file_ownership") in repository_ownership.asset_deps[
         AssetKey("member_repository_ownership")
@@ -91,6 +96,7 @@ def test_each_layer_is_its_own_group():
         "member_ownership_entropy": "l4_features",
         "repository_orphaned_code": "l4_features",
         "member_moved_line_share": "l4_features",
+        "member_history_boundary_share": "l4_features",
         "member_repository_ownership": "l4_features",
         "member_ownership": "l4_features",
     }
