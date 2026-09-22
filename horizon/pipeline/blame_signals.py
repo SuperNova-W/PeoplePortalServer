@@ -10,6 +10,9 @@ from pathlib import PurePosixPath
 from .blame_parser import BlameRecord
 
 
+STALE_WINDOW_SECONDS = 180 * 24 * 60 * 60
+
+
 @dataclass(frozen=True)
 class MemberMultiOwnerFiles:
     """Share of a member's contributed files that have multiple owners."""
@@ -84,6 +87,19 @@ class MemberDirectoryComponentBreadth:
     files_contributed: int
     directory_breadth: int
     component_breadth: int
+
+
+@dataclass(frozen=True)
+class MemberStaleLines:
+    """Share of a member's lines older than the stale window."""
+
+    organization: str
+    repository: str
+    author_name: str
+    author_email: str
+    surviving_lines: int
+    stale_lines: int
+    stale_line_share: float
 
 
 def calculate_member_multi_owner_file_share(
@@ -338,4 +354,53 @@ def calculate_member_directory_component_breadth(
         for (organization, repository, author_name, author_email), values in sorted(
             groups.items()
         )
+    ]
+
+
+def calculate_member_stale_line_share(
+    records: list[BlameRecord],
+) -> list[MemberStaleLines]:
+    """Calculate stale-line share relative to the snapshot's newest author time.
+
+    A line is stale when it is at least 180 days older than the newest authored
+    line in the capture. Missing timestamps are not classified as stale.
+    """
+
+    timestamps = [
+        record.authored_at_epoch
+        for record in records
+        if record.authored_at_epoch is not None
+    ]
+    stale_before = max(timestamps, default=0) - STALE_WINDOW_SECONDS
+    counts: dict[tuple[str, str, str, str], list[int]] = defaultdict(lambda: [0, 0])
+    for record in records:
+        key = (
+            record.organization,
+            record.repository,
+            record.author_name,
+            record.author_email,
+        )
+        counts[key][0] += 1
+        if (
+            record.authored_at_epoch is not None
+            and record.authored_at_epoch <= stale_before
+        ):
+            counts[key][1] += 1
+
+    return [
+        MemberStaleLines(
+            organization=organization,
+            repository=repository,
+            author_name=author_name,
+            author_email=author_email,
+            surviving_lines=surviving_lines,
+            stale_lines=stale_lines,
+            stale_line_share=stale_lines / surviving_lines,
+        )
+        for (
+            organization,
+            repository,
+            author_name,
+            author_email,
+        ), (surviving_lines, stale_lines) in sorted(counts.items())
     ]

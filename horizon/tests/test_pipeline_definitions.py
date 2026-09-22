@@ -22,6 +22,7 @@ ASSET_KEYS = {
     AssetKey("member_moved_line_share"),
     AssetKey("member_history_boundary_share"),
     AssetKey("member_directory_component_breadth"),
+    AssetKey("member_stale_line_share"),
     AssetKey("member_repository_ownership"),
     AssetKey("member_ownership"),
 }
@@ -50,6 +51,7 @@ def test_the_layers_depend_on_each_other_in_order():
     moved_lines = assets_by_key[AssetKey("member_moved_line_share")]
     boundary_lines = assets_by_key[AssetKey("member_history_boundary_share")]
     breadth = assets_by_key[AssetKey("member_directory_component_breadth")]
+    stale = assets_by_key[AssetKey("member_stale_line_share")]
     repository_ownership = assets_by_key[AssetKey("member_repository_ownership")]
     member_ownership = assets_by_key[AssetKey("member_ownership")]
 
@@ -73,6 +75,9 @@ def test_the_layers_depend_on_each_other_in_order():
     ]
     assert AssetKey("blame_records") in breadth.asset_deps[
         AssetKey("member_directory_component_breadth")
+    ]
+    assert AssetKey("blame_records") in stale.asset_deps[
+        AssetKey("member_stale_line_share")
     ]
     assert AssetKey("file_ownership") in repository_ownership.asset_deps[
         AssetKey("member_repository_ownership")
@@ -103,6 +108,7 @@ def test_each_layer_is_its_own_group():
         "member_moved_line_share": "l4_features",
         "member_history_boundary_share": "l4_features",
         "member_directory_component_breadth": "l4_features",
+        "member_stale_line_share": "l4_features",
         "member_repository_ownership": "l4_features",
         "member_ownership": "l4_features",
     }

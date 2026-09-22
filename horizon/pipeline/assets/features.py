@@ -13,12 +13,14 @@ from ..blame_signals import (
     MemberHistoryBoundary,
     MemberDirectoryComponentBreadth,
     MemberOwnershipEntropy,
+    MemberStaleLines,
     RepositoryOrphanedCode,
     calculate_member_multi_owner_file_share,
     calculate_member_moved_line_share,
     calculate_member_history_boundary_share,
     calculate_member_directory_component_breadth,
     calculate_member_ownership_entropy,
+    calculate_member_stale_line_share,
     calculate_orphaned_code_share,
 )
 from ..metadata import table_schema_from
@@ -128,6 +130,19 @@ MEMBER_DIRECTORY_COMPONENT_BREADTH_SCHEMA = table_schema_from(
             "int",
             "Distinct top-level path components containing the author's files.",
         ),
+    },
+)
+
+MEMBER_STALE_LINE_SHARE_SCHEMA = table_schema_from(
+    MemberStaleLines,
+    {
+        "organization": ("string", "Gitea organization."),
+        "repository": ("string", "Repository being measured."),
+        "author_name": ("string", "Git author identity."),
+        "author_email": ("string", "Email portion of the Git author identity."),
+        "surviving_lines": ("int", "Current lines attributed to the author."),
+        "stale_lines": ("int", "Lines at least 180 days older than the snapshot reference."),
+        "stale_line_share": ("float", "stale_lines divided by surviving_lines."),
     },
 )
 
@@ -507,6 +522,40 @@ def member_ownership(
     return rows
 
 
+@asset(
+    group_name="l4_features",
+    kinds={"python", "postgres"},
+    description=(
+        "Calculates the share of each member's surviving lines that are at least "
+        "180 days older than the newest authored line in the snapshot."
+    ),
+    metadata={
+        "dagster/column_schema": MEMBER_STALE_LINE_SHARE_SCHEMA,
+        "preview": _empty_preview(MEMBER_STALE_LINE_SHARE_SCHEMA),
+        "table": "member_stale_line_share",
+        "grain": "one row per run, repository, and author",
+        "source": "blame_records",
+        "stale_window_days": 180,
+    },
+)
+def member_stale_line_share(
+    context: AssetExecutionContext,
+    blame_records: list[BlameRecord],
+    postgres: PostgresResource,
+) -> list[MemberStaleLines]:
+    rows = calculate_member_stale_line_share(blame_records)
+    postgres.write_member_stale_line_share(context.run.run_id, rows)
+    context.add_output_metadata(
+        _feature_metadata(
+            "member_stale_line_share",
+            rows,
+            MEMBER_STALE_LINE_SHARE_SCHEMA,
+            stale_lines=sum(row.stale_lines for row in rows),
+        )
+    )
+    return rows
+
+
 __all__ = [
     "FILE_OWNERSHIP_SCHEMA",
     "MEMBER_MULTI_OWNER_FILE_SHARE_SCHEMA",
@@ -515,6 +564,7 @@ __all__ = [
     "MEMBER_MOVED_LINE_SHARE_SCHEMA",
     "MEMBER_HISTORY_BOUNDARY_SHARE_SCHEMA",
     "MEMBER_DIRECTORY_COMPONENT_BREADTH_SCHEMA",
+    "MEMBER_STALE_LINE_SHARE_SCHEMA",
     "MEMBER_OWNERSHIP_SCHEMA",
     "MEMBER_REPOSITORY_OWNERSHIP_SCHEMA",
     "file_ownership",
@@ -524,6 +574,7 @@ __all__ = [
     "member_moved_line_share",
     "member_history_boundary_share",
     "member_directory_component_breadth",
+    "member_stale_line_share",
     "member_ownership",
     "member_repository_ownership",
 ]

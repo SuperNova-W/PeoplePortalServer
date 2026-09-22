@@ -1,11 +1,13 @@
 from pipeline.blame_parser import BlameRecord
 from dataclasses import replace
+from pipeline.blame_signals import STALE_WINDOW_SECONDS
 from pipeline.blame_signals import (
     calculate_member_multi_owner_file_share,
     calculate_member_ownership_entropy,
     calculate_member_moved_line_share,
     calculate_member_history_boundary_share,
     calculate_member_directory_component_breadth,
+    calculate_member_stale_line_share,
     calculate_orphaned_code_share,
 )
 
@@ -131,3 +133,18 @@ def test_directory_and_component_breadth_are_distinct():
     assert rows[0].files_contributed == 3
     assert rows[0].directory_breadth == 3
     assert rows[0].component_breadth == 2
+
+
+def test_stale_line_share_uses_snapshot_reference_time():
+    newest = 2_000_000_000
+    fresh = replace(record(path="src/a.py", author="Alice", email="a@example.com"), authored_at_epoch=newest)
+    old = replace(
+        fresh,
+        authored_at_epoch=newest - STALE_WINDOW_SECONDS,
+        committed_at_epoch=newest - STALE_WINDOW_SECONDS,
+        commit_sha="old",
+    )
+
+    rows = calculate_member_stale_line_share([fresh, old])
+    assert rows[0].stale_lines == 1
+    assert rows[0].stale_line_share == 0.5
