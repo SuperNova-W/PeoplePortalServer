@@ -1,7 +1,9 @@
 from pipeline.blame_parser import BlameRecord
+from dataclasses import replace
 from pipeline.blame_signals import (
     calculate_member_multi_owner_file_share,
     calculate_member_ownership_entropy,
+    calculate_member_moved_line_share,
     calculate_orphaned_code_share,
 )
 
@@ -81,3 +83,13 @@ def test_orphaned_code_requires_a_nonempty_roster():
         assert "active member email roster" in str(exc)
     else:
         raise AssertionError("expected an empty roster to fail clearly")
+
+
+def test_moved_line_share_uses_blame_file_lineage():
+    original = record(path="src/new.py", author="Alice", email="a@example.com")
+    moved = replace(original, origin_file_path="legacy/old.py")
+
+    row = calculate_member_moved_line_share([original, moved])[0]
+    assert row.surviving_lines == 2
+    assert row.moved_lines == 1
+    assert row.moved_line_share == 0.5

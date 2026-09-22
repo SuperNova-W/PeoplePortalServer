@@ -9,9 +9,11 @@ from dagster import AssetExecutionContext, MetadataValue, TableRecord, asset
 from ..blame_parser import BlameRecord
 from ..blame_signals import (
     MemberMultiOwnerFiles,
+    MemberMovedLines,
     MemberOwnershipEntropy,
     RepositoryOrphanedCode,
     calculate_member_multi_owner_file_share,
+    calculate_member_moved_line_share,
     calculate_member_ownership_entropy,
     calculate_orphaned_code_share,
 )
@@ -71,6 +73,19 @@ REPOSITORY_ORPHANED_CODE_SCHEMA = table_schema_from(
         "orphaned_lines": ("int", "Lines owned by emails outside the active roster."),
         "orphaned_code_share": ("float", "orphaned_lines divided by surviving_lines."),
         "active_identities": ("int", "Number of active emails used for classification."),
+    },
+)
+
+MEMBER_MOVED_LINE_SHARE_SCHEMA = table_schema_from(
+    MemberMovedLines,
+    {
+        "organization": ("string", "Gitea organization."),
+        "repository": ("string", "Repository being measured."),
+        "author_name": ("string", "Git author identity."),
+        "author_email": ("string", "Email portion of the Git author identity."),
+        "surviving_lines": ("int", "Current lines attributed to the author."),
+        "moved_lines": ("int", "Lines whose origin file differs from the current file."),
+        "moved_line_share": ("float", "moved_lines divided by surviving_lines."),
     },
 )
 
@@ -282,6 +297,39 @@ def repository_orphaned_code(
     group_name="l4_features",
     kinds={"python", "postgres"},
     description=(
+        "Calculates the share of each member's surviving lines whose origin "
+        "file differs from the current file."
+    ),
+    metadata={
+        "dagster/column_schema": MEMBER_MOVED_LINE_SHARE_SCHEMA,
+        "preview": _empty_preview(MEMBER_MOVED_LINE_SHARE_SCHEMA),
+        "table": "member_moved_line_share",
+        "grain": "one row per run, repository, and author",
+        "source": "blame_records",
+    },
+)
+def member_moved_line_share(
+    context: AssetExecutionContext,
+    blame_records: list[BlameRecord],
+    postgres: PostgresResource,
+) -> list[MemberMovedLines]:
+    rows = calculate_member_moved_line_share(blame_records)
+    postgres.write_member_moved_line_share(context.run.run_id, rows)
+    context.add_output_metadata(
+        _feature_metadata(
+            "member_moved_line_share",
+            rows,
+            MEMBER_MOVED_LINE_SHARE_SCHEMA,
+            moved_lines=sum(row.moved_lines for row in rows),
+        )
+    )
+    return rows
+
+
+@asset(
+    group_name="l4_features",
+    kinds={"python", "postgres"},
+    description=(
         "Aggregates file ownership to repository ownership, including surviving "
         "lines, share, files touched, majority-owned files, and rank."
     ),
@@ -357,12 +405,14 @@ __all__ = [
     "MEMBER_MULTI_OWNER_FILE_SHARE_SCHEMA",
     "MEMBER_OWNERSHIP_ENTROPY_SCHEMA",
     "REPOSITORY_ORPHANED_CODE_SCHEMA",
+    "MEMBER_MOVED_LINE_SHARE_SCHEMA",
     "MEMBER_OWNERSHIP_SCHEMA",
     "MEMBER_REPOSITORY_OWNERSHIP_SCHEMA",
     "file_ownership",
     "member_multi_owner_file_share",
     "member_ownership_entropy",
     "repository_orphaned_code",
+    "member_moved_line_share",
     "member_ownership",
     "member_repository_ownership",
 ]
