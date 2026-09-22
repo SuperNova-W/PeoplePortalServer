@@ -16,6 +16,7 @@ ASSET_KEYS = {
     AssetKey("blame_records"),
     AssetKey("file_ownership"),
     AssetKey("member_multi_owner_file_share"),
+    AssetKey("member_ownership_entropy"),
     AssetKey("member_repository_ownership"),
     AssetKey("member_ownership"),
 }
@@ -39,6 +40,7 @@ def test_the_layers_depend_on_each_other_in_order():
     records = assets_by_key[AssetKey("blame_records")]
     file_ownership = assets_by_key[AssetKey("file_ownership")]
     multi_owner = assets_by_key[AssetKey("member_multi_owner_file_share")]
+    entropy = assets_by_key[AssetKey("member_ownership_entropy")]
     repository_ownership = assets_by_key[AssetKey("member_repository_ownership")]
     member_ownership = assets_by_key[AssetKey("member_ownership")]
 
@@ -47,6 +49,9 @@ def test_the_layers_depend_on_each_other_in_order():
     assert AssetKey("blame_records") in file_ownership.asset_deps[AssetKey("file_ownership")]
     assert AssetKey("blame_records") in multi_owner.asset_deps[
         AssetKey("member_multi_owner_file_share")
+    ]
+    assert AssetKey("blame_records") in entropy.asset_deps[
+        AssetKey("member_ownership_entropy")
     ]
     assert AssetKey("file_ownership") in repository_ownership.asset_deps[
         AssetKey("member_repository_ownership")
@@ -72,6 +77,7 @@ def test_each_layer_is_its_own_group():
         "blame_records": "l3_parse",
         "file_ownership": "l4_features",
         "member_multi_owner_file_share": "l4_features",
+        "member_ownership_entropy": "l4_features",
         "member_repository_ownership": "l4_features",
         "member_ownership": "l4_features",
     }

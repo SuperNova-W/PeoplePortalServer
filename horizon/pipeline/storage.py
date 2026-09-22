@@ -9,7 +9,7 @@ from pathlib import Path
 import psycopg
 from dagster import ConfigurableResource
 
-from .blame_signals import MemberMultiOwnerFiles
+from .blame_signals import MemberMultiOwnerFiles, MemberOwnershipEntropy
 from .config import PipelineConfigError
 from .ownership import FileOwnership, MemberOwnership, MemberRepositoryOwnership
 
@@ -112,6 +112,40 @@ class PostgresResource(ConfigurableResource):
                         files_contributed = EXCLUDED.files_contributed,
                         multi_owner_files = EXCLUDED.multi_owner_files,
                         multi_owner_file_share = EXCLUDED.multi_owner_file_share
+                    """,
+                    values,
+                )
+        return len(values)
+
+    def write_member_ownership_entropy(
+        self, run_id: str, rows: Sequence[MemberOwnershipEntropy]
+    ) -> int:
+        values = [
+            (
+                run_id,
+                row.organization,
+                row.repository,
+                row.author_name,
+                row.author_email,
+                row.files_contributed,
+                row.ownership_entropy,
+            )
+            for row in rows
+        ]
+        self.ensure_schema()
+        with self.connect() as connection:
+            with connection.cursor() as cursor:
+                cursor.executemany(
+                    """
+                    INSERT INTO horizon_gt_features.member_ownership_entropy (
+                        run_id, organization, repository, author_name, author_email,
+                        files_contributed, ownership_entropy
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (
+                        run_id, organization, repository, author_name, author_email
+                    ) DO UPDATE SET
+                        files_contributed = EXCLUDED.files_contributed,
+                        ownership_entropy = EXCLUDED.ownership_entropy
                     """,
                     values,
                 )
