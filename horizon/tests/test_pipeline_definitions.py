@@ -78,6 +78,12 @@ def test_every_check_is_registered_against_its_asset():
         (AssetKey("blame_capture"), "capture_is_non_empty"),
         (AssetKey("blame_records"), "records_carry_every_field"),
         (AssetKey("blame_records"), "records_parse_completely"),
+        (AssetKey("file_ownership"), "file_ownership_reconciles"),
+        (
+            AssetKey("member_repository_ownership"),
+            "member_repository_ownership_reconciles",
+        ),
+        (AssetKey("member_ownership"), "member_ownership_reconciles"),
     }
 
 

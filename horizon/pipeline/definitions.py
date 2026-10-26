@@ -19,6 +19,9 @@ from .assets import (
 )
 from .checks import (
     capture_is_non_empty,
+    file_ownership_reconciles,
+    member_ownership_reconciles,
+    member_repository_ownership_reconciles,
     records_carry_every_field,
     records_parse_completely,
 )
@@ -37,6 +40,9 @@ defs = Definitions(
         capture_is_non_empty,
         records_carry_every_field,
         records_parse_completely,
+        file_ownership_reconciles,
+        member_repository_ownership_reconciles,
+        member_ownership_reconciles,
     ],
     resources=build_resources(),
 )

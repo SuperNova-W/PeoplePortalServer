@@ -12,8 +12,23 @@ data.
 # into strings it then refuses.
 from dagster import AssetCheckResult, AssetCheckSeverity, AssetIn, asset_check
 
-from .assets import BlameCapture, blame_capture, blame_records
+from .assets import (
+    BlameCapture,
+    blame_capture,
+    blame_records,
+    file_ownership,
+    member_ownership,
+    member_repository_ownership,
+)
 from .blame_parser import BlameRecord
+from .ownership import (
+    FileOwnership,
+    MemberOwnership,
+    MemberRepositoryOwnership,
+    reconcile_file_ownership,
+    reconcile_member_ownership,
+    reconcile_member_repository_ownership,
+)
 
 
 @asset_check(
@@ -163,4 +178,98 @@ def records_parse_completely(
             "files_captured": expected,
             "files_parsed": len(parsed_paths),
         },
+    )
+
+
+# Ownership reconciliation. The feature tables are the foundation later signals
+# build on, so each layer is checked against the layer it was derived from: a
+# share that does not sum to one, or a total that drifts from its source rows,
+# fails the run rather than reaching Postgres consumers unnoticed. The rules
+# themselves live in ``pipeline.ownership`` beside the calculations.
+
+
+def _reconciliation_result(
+    problems: list[str], summary: str, metadata: dict
+) -> AssetCheckResult:
+    return AssetCheckResult(
+        passed=not problems,
+        severity=AssetCheckSeverity.ERROR,
+        description=summary if not problems else " ".join(problems),
+        metadata={**metadata, "problems": len(problems)},
+    )
+
+
+@asset_check(
+    asset=file_ownership,
+    additional_ins={"blame_records": AssetIn("blame_records")},
+    description=(
+        "Each file's shares sum to one, its author lines sum to file_lines, and "
+        "every blame record is counted exactly once."
+    ),
+)
+def file_ownership_reconciles(
+    file_ownership: list[FileOwnership],
+    blame_records: list[BlameRecord],
+) -> AssetCheckResult:
+    files = {(row.organization, row.repository, row.file_path) for row in file_ownership}
+    return _reconciliation_result(
+        reconcile_file_ownership(blame_records, file_ownership),
+        f"{len(files)} files reconcile with {len(blame_records)} blame records.",
+        {
+            "rows": len(file_ownership),
+            "files": len(files),
+            "blame_records": len(blame_records),
+        },
+    )
+
+
+@asset_check(
+    asset=member_repository_ownership,
+    additional_ins={"file_ownership": AssetIn("file_ownership")},
+    description=(
+        "Each repository's shares sum to one, its totals match file_ownership, "
+        "and ranks run 1..n without gaps."
+    ),
+)
+def member_repository_ownership_reconciles(
+    member_repository_ownership: list[MemberRepositoryOwnership],
+    file_ownership: list[FileOwnership],
+) -> AssetCheckResult:
+    repositories = {
+        (row.organization, row.repository) for row in member_repository_ownership
+    }
+    return _reconciliation_result(
+        reconcile_member_repository_ownership(
+            file_ownership, member_repository_ownership
+        ),
+        f"{len(repositories)} repositories reconcile with file_ownership.",
+        {
+            "rows": len(member_repository_ownership),
+            "repositories": len(repositories),
+        },
+    )
+
+
+@asset_check(
+    asset=member_ownership,
+    additional_ins={
+        "blame_records": AssetIn("blame_records"),
+        "member_repository_ownership": AssetIn("member_repository_ownership"),
+    },
+    description=(
+        "Each member's lines, files, repositories, majority files, and surviving "
+        "commits match the repository rows and blame records they came from."
+    ),
+)
+def member_ownership_reconciles(
+    member_ownership: list[MemberOwnership],
+    blame_records: list[BlameRecord],
+    member_repository_ownership: list[MemberRepositoryOwnership],
+) -> AssetCheckResult:
+    return _reconciliation_result(
+        reconcile_member_ownership(
+            blame_records, member_repository_ownership, member_ownership
+        ),
+        f"{len(member_ownership)} members reconcile with their repository rows.",
+        {"rows": len(member_ownership)},
     )
