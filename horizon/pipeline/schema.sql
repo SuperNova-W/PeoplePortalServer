@@ -45,6 +45,31 @@ CREATE TABLE IF NOT EXISTS horizon_gt_features.member_ownership (
     PRIMARY KEY (run_id, organization, author_name, author_email)
 );
 
+-- Repository snapshots refreshed within a rolling three-day window.
+-- run_id identifies the latest source run for each retained snapshot.
+CREATE TABLE IF NOT EXISTS horizon_gt_features.repository_concentration (
+    run_id TEXT NOT NULL,
+    organization TEXT NOT NULL,
+    repository TEXT NOT NULL,
+    total_lines INTEGER NOT NULL CHECK (total_lines > 0),
+    distinct_authors INTEGER NOT NULL CHECK (distinct_authors > 0),
+    top_author_name TEXT NOT NULL,
+    top_author_email TEXT NOT NULL,
+    top_author_share DOUBLE PRECISION NOT NULL CHECK (top_author_share > 0 AND top_author_share <= 1),
+    hhi DOUBLE PRECISION NOT NULL CHECK (hhi > 0 AND hhi <= 1),
+    bus_factor_50 INTEGER NOT NULL CHECK (bus_factor_50 BETWEEN 1 AND distinct_authors),
+    PRIMARY KEY (run_id, organization, repository)
+);
+
+-- Also upgrades tables created before the rolling-window policy was added.
+-- Existing rows have no recorded write time, so their window starts at migration.
+ALTER TABLE horizon_gt_features.repository_concentration
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+CREATE INDEX IF NOT EXISTS repository_concentration_latest_idx
+    ON horizon_gt_features.repository_concentration (organization, repository, updated_at DESC);
+
 CREATE INDEX IF NOT EXISTS file_ownership_repository_idx
     ON horizon_gt_features.file_ownership (run_id, organization, repository);
 

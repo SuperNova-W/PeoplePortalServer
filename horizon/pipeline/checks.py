@@ -10,9 +10,17 @@ data.
 # No `from __future__ import annotations` in this module: Dagster resolves the
 # context and asset-input annotations at decoration time, and PEP 563 turns them
 # into strings it then refuses.
+from collections import defaultdict
+from math import fsum, isclose, isfinite
+
 from dagster import AssetCheckResult, AssetCheckSeverity, AssetIn, asset_check
 
-from .assets import BlameCapture, blame_capture, blame_records
+from .assets import (
+    BlameCapture, blame_capture, blame_records,
+    member_repository_ownership, repository_concentration,
+)
+from .concentration import RepositoryConcentration
+from .ownership import MemberRepositoryOwnership
 from .blame_parser import BlameRecord
 
 
@@ -163,4 +171,80 @@ def records_parse_completely(
             "files_captured": expected,
             "files_parsed": len(parsed_paths),
         },
+    )
+
+
+@asset_check(
+    asset=member_repository_ownership,
+    blocking=True,
+    description="Each repository's author shares are finite, valid, and sum to one.",
+)
+def repository_shares_sum_to_one(
+    member_repository_ownership: list[MemberRepositoryOwnership],
+) -> AssetCheckResult:
+    grouped = defaultdict(list)
+    for row in member_repository_ownership:
+        grouped[(row.organization, row.repository)].append(row.ownership_share)
+    invalid = [
+        key for key, shares in grouped.items()
+        if not all(isfinite(share) and 0 <= share <= 1 for share in shares)
+        or not isclose(fsum(shares), 1.0, rel_tol=0, abs_tol=1e-9)
+    ]
+    return AssetCheckResult(
+        passed=not invalid,
+        severity=AssetCheckSeverity.ERROR,
+        description="Author shares must sum to 1 within an absolute tolerance of 1e-9.",
+        metadata={"repositories_checked": len(grouped), "invalid_repositories": repr(sorted(invalid))},
+    )
+
+
+@asset_check(
+    asset=repository_concentration,
+    description="Bus factor is between one and the distinct author count.",
+)
+def concentration_bus_factor_is_valid(
+    repository_concentration: list[RepositoryConcentration],
+) -> AssetCheckResult:
+    invalid = [
+        (row.run_id, row.organization, row.repository)
+        for row in repository_concentration
+        if not 1 <= row.bus_factor_50 <= row.distinct_authors
+    ]
+    return AssetCheckResult(
+        passed=not invalid,
+        severity=AssetCheckSeverity.ERROR,
+        metadata={"rows_checked": len(repository_concentration), "invalid_repositories": repr(sorted(invalid))},
+    )
+
+
+@asset_check(
+    asset=repository_concentration,
+    additional_ins={"member_repository_ownership": AssetIn("member_repository_ownership")},
+    description="Exactly one concentration row per input repository, with matching line and author totals.",
+)
+def concentration_totals_match_ownership(
+    repository_concentration: list[RepositoryConcentration],
+    member_repository_ownership: list[MemberRepositoryOwnership],
+) -> AssetCheckResult:
+    expected_lines = defaultdict(int)
+    expected_authors = defaultdict(set)
+    for row in member_repository_ownership:
+        key = (row.organization, row.repository)
+        expected_lines[key] += row.surviving_lines
+        expected_authors[key].add((row.author_name, row.author_email))
+    actual = defaultdict(list)
+    for row in repository_concentration:
+        actual[(row.organization, row.repository)].append(row)
+    invalid = []
+    for key in expected_lines.keys() | actual.keys():
+        rows = actual[key]
+        if (key not in expected_lines or len(rows) != 1
+                or rows[0].total_lines != expected_lines[key]
+                or rows[0].distinct_authors != len(expected_authors[key])):
+            invalid.append(key)
+    return AssetCheckResult(
+        passed=not invalid,
+        severity=AssetCheckSeverity.ERROR,
+        metadata={"repositories_expected": len(expected_lines), "rows_produced": len(repository_concentration),
+                  "invalid_repositories": repr(sorted(invalid))},
     )

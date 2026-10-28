@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
+from datetime import timedelta
 from pathlib import Path
 
 import psycopg
 from dagster import ConfigurableResource
 
 from .config import PipelineConfigError
+from .concentration import RepositoryConcentration
 from .ownership import FileOwnership, MemberOwnership, MemberRepositoryOwnership
 
 
@@ -164,6 +166,82 @@ class PostgresResource(ConfigurableResource):
                     values,
                 )
         return len(values)
+
+    def write_repository_concentration(
+        self, run_id: str, rows: Sequence[RepositoryConcentration]
+    ) -> int:
+        """Refresh the latest repository snapshot within a rolling 72-hour window.
+
+        A new run replaces the snapshot's source run ID and resets updated_at.
+        Repeating the same run is a no-op, so retries do not extend the window.
+        Older snapshots remain available once a gap exceeds 72 hours.
+        """
+        if any(row.run_id != run_id for row in rows):
+            raise ValueError("Concentration rows must belong to the supplied run_id")
+        self.ensure_schema()
+        with self.connect() as connection:
+            with connection.cursor() as cursor:
+                # Consistent ordering avoids deadlocks for overlapping batches.
+                for row in sorted(rows, key=lambda r: (r.organization, r.repository)):
+                    # Serialize writers even when no snapshot exists to row-lock.
+                    cursor.execute(
+                        "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                        [repr((row.organization, row.repository))],
+                    )
+                    cursor.execute(
+                        """
+                        SELECT run_id, updated_at
+                        FROM horizon_gt_features.repository_concentration
+                        WHERE organization = %s AND repository = %s
+                        ORDER BY updated_at DESC, run_id DESC
+                        LIMIT 1 FOR UPDATE
+                        """,
+                        (row.organization, row.repository),
+                    )
+                    latest = cursor.fetchone()
+                    if latest and latest[0] == run_id:
+                        continue
+                    # Do not replay a historical run over a newer snapshot.
+                    cursor.execute(
+                        """SELECT 1 FROM horizon_gt_features.repository_concentration
+                        WHERE run_id = %s AND organization = %s AND repository = %s""",
+                        (run_id, row.organization, row.repository),
+                    )
+                    if cursor.fetchone():
+                        continue
+                    cursor.execute("SELECT clock_timestamp()")
+                    written_at = cursor.fetchone()[0]
+                    metrics = (
+                        row.total_lines, row.distinct_authors, row.top_author_name,
+                        row.top_author_email, row.top_author_share, row.hhi,
+                        row.bus_factor_50,
+                    )
+                    if latest and written_at - latest[1] <= timedelta(days=3):
+                        cursor.execute(
+                            """
+                            UPDATE horizon_gt_features.repository_concentration
+                            SET run_id = %s, total_lines = %s, distinct_authors = %s,
+                                top_author_name = %s, top_author_email = %s,
+                                top_author_share = %s, hhi = %s, bus_factor_50 = %s,
+                                updated_at = %s
+                            WHERE run_id = %s AND organization = %s AND repository = %s
+                            """,
+                            (run_id, *metrics, written_at, latest[0],
+                             row.organization, row.repository),
+                        )
+                    else:
+                        cursor.execute(
+                            """
+                            INSERT INTO horizon_gt_features.repository_concentration (
+                                run_id, organization, repository, total_lines,
+                                distinct_authors, top_author_name, top_author_email,
+                                top_author_share, hhi, bus_factor_50, created_at, updated_at
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            """,
+                            (run_id, row.organization, row.repository, *metrics,
+                             written_at, written_at),
+                        )
+        return len(rows)
 
     def _require_database_url(self) -> str:
         if not (self.database_url or "").strip():

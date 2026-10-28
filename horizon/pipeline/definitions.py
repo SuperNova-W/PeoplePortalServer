@@ -16,9 +16,13 @@ from .assets import (
     gitea_repository,
     member_ownership,
     member_repository_ownership,
+    repository_concentration,
 )
 from .checks import (
     capture_is_non_empty,
+    repository_shares_sum_to_one,
+    concentration_bus_factor_is_valid,
+    concentration_totals_match_ownership,
     records_carry_every_field,
     records_parse_completely,
 )
@@ -31,10 +35,14 @@ defs = Definitions(
         blame_records,
         file_ownership,
         member_repository_ownership,
+        repository_concentration,
         member_ownership,
     ],
     asset_checks=[
         capture_is_non_empty,
+        repository_shares_sum_to_one,
+        concentration_bus_factor_is_valid,
+        concentration_totals_match_ownership,
         records_carry_every_field,
         records_parse_completely,
     ],

@@ -17,6 +17,7 @@ ASSET_KEYS = {
     AssetKey("file_ownership"),
     AssetKey("member_repository_ownership"),
     AssetKey("member_ownership"),
+    AssetKey("repository_concentration"),
 }
 
 
@@ -68,6 +69,7 @@ def test_each_layer_is_its_own_group():
         "file_ownership": "l4_features",
         "member_repository_ownership": "l4_features",
         "member_ownership": "l4_features",
+        "repository_concentration": "l4_features",
     }
 
 
@@ -76,6 +78,9 @@ def test_every_check_is_registered_against_its_asset():
 
     assert {(key.asset_key, key.name) for key in checks} == {
         (AssetKey("blame_capture"), "capture_is_non_empty"),
+        (AssetKey("member_repository_ownership"), "repository_shares_sum_to_one"),
+        (AssetKey("repository_concentration"), "concentration_bus_factor_is_valid"),
+        (AssetKey("repository_concentration"), "concentration_totals_match_ownership"),
         (AssetKey("blame_records"), "records_carry_every_field"),
         (AssetKey("blame_records"), "records_parse_completely"),
     }
@@ -108,3 +113,10 @@ def test_resources_build_even_when_nothing_is_configured():
 
     assert resources["postgres"].database_url is None
     assert resources["gitea"].base_url is None
+
+
+def test_concentration_depends_on_repository_ownership():
+    asset = defs.get_repository_def().assets_defs_by_key[AssetKey("repository_concentration")]
+    assert asset.asset_deps[AssetKey("repository_concentration")] == {
+        AssetKey("member_repository_ownership")
+    }

@@ -7,6 +7,7 @@ from dataclasses import asdict
 from dagster import AssetExecutionContext, MetadataValue, TableRecord, asset
 
 from ..blame_parser import BlameRecord
+from ..concentration import RepositoryConcentration, calculate_repository_concentration
 from ..metadata import table_schema_from
 from ..ownership import (
     FileOwnership,
@@ -61,6 +62,23 @@ MEMBER_OWNERSHIP_SCHEMA = table_schema_from(
         "repositories": ("int", "Repositories with at least one surviving line."),
         "majority_owned_files": ("int", "Files where the author owns more than half the lines."),
         "average_file_share": ("float", "Mean ownership share across the author's files."),
+    },
+)
+
+
+REPOSITORY_CONCENTRATION_SCHEMA = table_schema_from(
+    RepositoryConcentration,
+    {
+        "run_id": ("string", "Source Dagster run."),
+        "organization": ("string", "Gitea organization."),
+        "repository": ("string", "Repository being measured."),
+        "total_lines": ("int", "Sum of authors' surviving lines."),
+        "distinct_authors": ("int", "Distinct Git name and email identities."),
+        "top_author_name": ("string", "Name of the highest-share author."),
+        "top_author_email": ("string", "Email of the highest-share author."),
+        "top_author_share": ("float", "Largest author ownership share."),
+        "hhi": ("float", "Sum of squared author ownership shares."),
+        "bus_factor_50": ("int", "Fewest authors whose shares reach at least 50%."),
     },
 )
 
@@ -194,7 +212,46 @@ def member_ownership(
     return rows
 
 
+@asset(
+    group_name="l4_features",
+    kinds={"python", "postgres"},
+    description=(
+        "Calculates repository concentration and bus factor from author ownership. "
+        "Refreshes the latest stored snapshot within a rolling three-day window; "
+        "a longer gap creates a new historical snapshot."
+    ),
+    metadata={
+        "dagster/column_schema": REPOSITORY_CONCENTRATION_SCHEMA,
+        "preview": _empty_preview(REPOSITORY_CONCENTRATION_SCHEMA),
+        "table": "horizon_gt_features.repository_concentration",
+        "grain": "one retained snapshot per organization and repository; run_id is its latest source",
+        "source": "member_repository_ownership",
+    },
+)
+def repository_concentration(
+    context: AssetExecutionContext,
+    member_repository_ownership: list[MemberRepositoryOwnership],
+    postgres: PostgresResource,
+) -> list[RepositoryConcentration]:
+    rows = calculate_repository_concentration(
+        context.run.run_id, member_repository_ownership
+    )
+    postgres.write_repository_concentration(context.run.run_id, rows)
+    context.add_output_metadata(
+        _feature_metadata(
+            "horizon_gt_features.repository_concentration",
+            rows,
+            REPOSITORY_CONCENTRATION_SCHEMA,
+            repositories=len(rows),
+            total_lines=sum(row.total_lines for row in rows),
+        )
+    )
+    return rows
+
+
 __all__ = [
+    "REPOSITORY_CONCENTRATION_SCHEMA",
+    "repository_concentration",
     "FILE_OWNERSHIP_SCHEMA",
     "MEMBER_OWNERSHIP_SCHEMA",
     "MEMBER_REPOSITORY_OWNERSHIP_SCHEMA",
