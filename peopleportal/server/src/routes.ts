@@ -4,11 +4,15 @@
 import type { TsoaRoute } from '@tsoa/runtime';
 import {  fetchMiddlewares, ExpressTemplateService } from '@tsoa/runtime';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-import { PlatformController } from './controllers/PlatformController';
+import { OrgController } from './controllers/OrgController';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { BindleController } from './controllers/BindleController';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-import { OrgController } from './controllers/OrgController';
+import { SurveyRoundController } from './controllers/SurveyRoundController';
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+import { SurveyController } from './controllers/SurveyController';
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+import { PlatformController } from './controllers/PlatformController';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 import { MeetingsController } from './controllers/MeetingsController';
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
@@ -29,31 +33,6 @@ const expressAuthenticationRecasted = expressAuthentication as (req: ExRequest, 
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
 const models: TsoaRoute.Models = {
-    "PlatformLicenseResponse": {
-        "dataType": "refObject",
-        "properties": {
-            "licenseText": {"dataType":"string","required":true},
-            "dependencies": {"dataType":"array","array":{"dataType":"nestedObjectLiteral","nestedProperties":{"version":{"dataType":"string","required":true},"name":{"dataType":"string","required":true}}},"required":true},
-        },
-        "additionalProperties": false,
-    },
-    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-    "BindlePermission": {
-        "dataType": "refObject",
-        "properties": {
-            "friendlyName": {"dataType":"string","required":true},
-            "description": {"dataType":"string","required":true},
-        },
-        "additionalProperties": false,
-    },
-    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-    "BindlePermissionMap": {
-        "dataType": "refObject",
-        "properties": {
-        },
-        "additionalProperties": {"ref":"BindlePermission"},
-    },
-    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
     "PaginationDefinition": {
         "dataType": "refObject",
         "properties": {
@@ -512,6 +491,74 @@ const models: TsoaRoute.Models = {
             "description": {"dataType":"string","validators":{"minLength":{"value":1}}},
             "teamStartDate": {"dataType":"string"},
             "teamEndDate": {"dataType":"string"},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "BindlePermission": {
+        "dataType": "refObject",
+        "properties": {
+            "friendlyName": {"dataType":"string","required":true},
+            "description": {"dataType":"string","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "BindlePermissionMap": {
+        "dataType": "refObject",
+        "properties": {
+        },
+        "additionalProperties": {"ref":"BindlePermission"},
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "SurveyRoundResult": {
+        "dataType": "refObject",
+        "properties": {
+            "roundId": {"dataType":"string","required":true},
+            "status": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["scheduled"]},{"dataType":"enum","enums":["open"]},{"dataType":"enum","enums":["closed"]}],"required":true},
+            "opensAt": {"dataType":"datetime","required":true},
+            "closesAt": {"dataType":"datetime","required":true},
+            "assignmentCount": {"dataType":"double","required":true},
+            "insertedCount": {"dataType":"double","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "CreateSurveyRoundRequest": {
+        "dataType": "refObject",
+        "properties": {
+            "seasonType": {"dataType":"union","subSchemas":[{"dataType":"enum","enums":["FALL"]},{"dataType":"enum","enums":["SPRING"]}],"required":true},
+            "seasonYear": {"dataType":"double","required":true},
+            "month": {"dataType":"string","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "SurveyPairing": {
+        "dataType": "refObject",
+        "properties": {
+            "semester": {"dataType":"string","required":true},
+            "projectPk": {"dataType":"string","required":true},
+            "respondentPk": {"dataType":"double","required":true},
+            "techLeadPk": {"dataType":"double","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "GenerateSurveyAssignmentsRequest": {
+        "dataType": "refObject",
+        "properties": {
+            "semester": {"dataType":"string","required":true},
+            "snapshotRunId": {"dataType":"string","required":true},
+        },
+        "additionalProperties": false,
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    "PlatformLicenseResponse": {
+        "dataType": "refObject",
+        "properties": {
+            "licenseText": {"dataType":"string","required":true},
+            "dependencies": {"dataType":"array","array":{"dataType":"nestedObjectLiteral","nestedProperties":{"version":{"dataType":"string","required":true},"name":{"dataType":"string","required":true}}},"required":true},
         },
         "additionalProperties": false,
     },
@@ -1171,65 +1218,6 @@ export function RegisterRoutes(app: Router) {
 
 
     
-        const argsPlatformController_getPlatformLicense: Record<string, TsoaRoute.ParameterSchema> = {
-        };
-        app.get('/api/platform/license',
-            authenticateMiddleware([{"oidc":[]}]),
-            ...(fetchMiddlewares<RequestHandler>(PlatformController)),
-            ...(fetchMiddlewares<RequestHandler>(PlatformController.prototype.getPlatformLicense)),
-
-            async function PlatformController_getPlatformLicense(request: ExRequest, response: ExResponse, next: any) {
-
-            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-
-            let validatedArgs: any[] = [];
-            try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsPlatformController_getPlatformLicense, request, response });
-
-                const controller = new PlatformController();
-
-              await templateService.apiHandler({
-                methodName: 'getPlatformLicense',
-                controller,
-                response,
-                next,
-                validatedArgs,
-                successStatus: 200,
-              });
-            } catch (err) {
-                return next(err);
-            }
-        });
-        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-        const argsBindleController_getDefinitions: Record<string, TsoaRoute.ParameterSchema> = {
-        };
-        app.get('/api/bindles/definitions',
-            ...(fetchMiddlewares<RequestHandler>(BindleController)),
-            ...(fetchMiddlewares<RequestHandler>(BindleController.prototype.getDefinitions)),
-
-            async function BindleController_getDefinitions(request: ExRequest, response: ExResponse, next: any) {
-
-            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
-
-            let validatedArgs: any[] = [];
-            try {
-                validatedArgs = templateService.getValidatedArgs({ args: argsBindleController_getDefinitions, request, response });
-
-                const controller = new BindleController();
-
-              await templateService.apiHandler({
-                methodName: 'getDefinitions',
-                controller,
-                response,
-                next,
-                validatedArgs,
-                successStatus: 200,
-              });
-            } catch (err) {
-                return next(err);
-            }
-        });
-        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
         const argsOrgController_getPeople: Record<string, TsoaRoute.ParameterSchema> = {
                 options: {"in":"queries","name":"options","required":true,"ref":"GetUserListOptions"},
         };
@@ -2459,6 +2447,223 @@ export function RegisterRoutes(app: Router) {
 
               await templateService.apiHandler({
                 methodName: 'archiveTeam',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: 200,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsBindleController_getDefinitions: Record<string, TsoaRoute.ParameterSchema> = {
+        };
+        app.get('/api/bindles/definitions',
+            ...(fetchMiddlewares<RequestHandler>(BindleController)),
+            ...(fetchMiddlewares<RequestHandler>(BindleController.prototype.getDefinitions)),
+
+            async function BindleController_getDefinitions(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsBindleController_getDefinitions, request, response });
+
+                const controller = new BindleController();
+
+              await templateService.apiHandler({
+                methodName: 'getDefinitions',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: 200,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsSurveyRoundController_createRound: Record<string, TsoaRoute.ParameterSchema> = {
+                body: {"in":"body","name":"body","required":true,"ref":"CreateSurveyRoundRequest"},
+        };
+        app.post('/api/surveys/rounds',
+            authenticateMiddleware([{"executive":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(SurveyRoundController)),
+            ...(fetchMiddlewares<RequestHandler>(SurveyRoundController.prototype.createRound)),
+
+            async function SurveyRoundController_createRound(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsSurveyRoundController_createRound, request, response });
+
+                const controller = new SurveyRoundController();
+
+              await templateService.apiHandler({
+                methodName: 'createRound',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: 200,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsSurveyRoundController_closeRound: Record<string, TsoaRoute.ParameterSchema> = {
+                roundId: {"in":"path","name":"roundId","required":true,"dataType":"string"},
+        };
+        app.post('/api/surveys/rounds/:roundId/close',
+            authenticateMiddleware([{"executive":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(SurveyRoundController)),
+            ...(fetchMiddlewares<RequestHandler>(SurveyRoundController.prototype.closeRound)),
+
+            async function SurveyRoundController_closeRound(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsSurveyRoundController_closeRound, request, response });
+
+                const controller = new SurveyRoundController();
+
+              await templateService.apiHandler({
+                methodName: 'closeRound',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: 200,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsSurveyRoundController_regenerateAssignments: Record<string, TsoaRoute.ParameterSchema> = {
+                roundId: {"in":"path","name":"roundId","required":true,"dataType":"string"},
+        };
+        app.post('/api/surveys/rounds/:roundId/regenerate',
+            authenticateMiddleware([{"executive":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(SurveyRoundController)),
+            ...(fetchMiddlewares<RequestHandler>(SurveyRoundController.prototype.regenerateAssignments)),
+
+            async function SurveyRoundController_regenerateAssignments(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsSurveyRoundController_regenerateAssignments, request, response });
+
+                const controller = new SurveyRoundController();
+
+              await templateService.apiHandler({
+                methodName: 'regenerateAssignments',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: 200,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsSurveyController_generateAssignments: Record<string, TsoaRoute.ParameterSchema> = {
+                req: {"in":"request","name":"req","required":true,"dataType":"object"},
+                projectPk: {"in":"path","name":"projectPk","required":true,"dataType":"string"},
+                body: {"in":"body","name":"body","required":true,"ref":"GenerateSurveyAssignmentsRequest"},
+        };
+        app.post('/api/surveys/projects/:projectPk/assignments',
+            authenticateMiddleware([{"executive":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(SurveyController)),
+            ...(fetchMiddlewares<RequestHandler>(SurveyController.prototype.generateAssignments)),
+
+            async function SurveyController_generateAssignments(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsSurveyController_generateAssignments, request, response });
+
+                const controller = new SurveyController();
+
+              await templateService.apiHandler({
+                methodName: 'generateAssignments',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: 200,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsSurveyController_getMyAssignments: Record<string, TsoaRoute.ParameterSchema> = {
+                req: {"in":"request","name":"req","required":true,"dataType":"object"},
+                semester: {"in":"query","name":"semester","required":true,"dataType":"string"},
+        };
+        app.get('/api/surveys/assignments/mine',
+            authenticateMiddleware([{"oidc":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(SurveyController)),
+            ...(fetchMiddlewares<RequestHandler>(SurveyController.prototype.getMyAssignments)),
+
+            async function SurveyController_getMyAssignments(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsSurveyController_getMyAssignments, request, response });
+
+                const controller = new SurveyController();
+
+              await templateService.apiHandler({
+                methodName: 'getMyAssignments',
+                controller,
+                response,
+                next,
+                validatedArgs,
+                successStatus: 200,
+              });
+            } catch (err) {
+                return next(err);
+            }
+        });
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+        const argsPlatformController_getPlatformLicense: Record<string, TsoaRoute.ParameterSchema> = {
+        };
+        app.get('/api/platform/license',
+            authenticateMiddleware([{"oidc":[]}]),
+            ...(fetchMiddlewares<RequestHandler>(PlatformController)),
+            ...(fetchMiddlewares<RequestHandler>(PlatformController.prototype.getPlatformLicense)),
+
+            async function PlatformController_getPlatformLicense(request: ExRequest, response: ExResponse, next: any) {
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = templateService.getValidatedArgs({ args: argsPlatformController_getPlatformLicense, request, response });
+
+                const controller = new PlatformController();
+
+              await templateService.apiHandler({
+                methodName: 'getPlatformLicense',
                 controller,
                 response,
                 next,

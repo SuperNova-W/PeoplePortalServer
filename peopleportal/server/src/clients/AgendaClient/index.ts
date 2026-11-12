@@ -20,6 +20,7 @@ import mongoose from "mongoose";
 import { Agenda } from "agenda";
 import { MongoBackend } from "@agendajs/mongo-backend";
 import { DefinedJobs, JobSchedulingData, RecurringJobs } from "./Jobs";
+import { registerMonthlySurveyJobs } from "./monthlySurveys";
 
 export class AgendaClient {
     private static readonly TAG = "AgendaClient";
@@ -62,6 +63,7 @@ export class AgendaClient {
             );
         }
 
+        await registerMonthlySurveyJobs(this.agenda);
         await this.agenda.start();
     }
 
